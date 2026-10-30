@@ -1872,8 +1872,8 @@ let GUIDE=null, GUIDEbusy=false, GUIDEerr="", guideMap=null, guideF="all", guide
 async function loadGuide(force){
   if(GUIDEbusy) return; GUIDEbusy=true; GUIDEerr="";
   try{
-    const me=await myPosition();
-    if(!me){ GUIDEerr=NATIVE?"Разреши местоположение (GPS), за да видиш какво има около теб.":"Картата и GPS работят в приложението FIT за Android."; return; }
+    let me=await myPosition();
+    if(!me){ me={lat:42.6977,lon:23.3219,approx:true}; }
     const key="fit_guide_"+me.lat.toFixed(2)+"_"+me.lon.toFixed(2)+"_"+guideRadius;
     if(!force){ try{ const c=JSON.parse(localStorage.getItem(key)||"null"); if(c&&Date.now()-c.at<6*3600e3){ GUIDE={me,list:c.list}; return; } }catch(e){} }
     GUIDE={me,list:[],loading:true}; GUIDEbusy=false; if(TAB==="guide") rGuide(); GUIDEbusy=true;
@@ -1929,7 +1929,7 @@ function rGuide(){
     <div class="chips" style="flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px"><button class="chip" type="button" data-gf="all" aria-pressed="${guideF==="all"}" style="flex:0 0 auto">Всичко</button>${Object.entries(GUIDE_CAT).map(([k,v])=>`<button class="chip" type="button" data-gf="${k}" aria-pressed="${guideF===k}" style="flex:0 0 auto"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${v.c};margin-right:6px"></span>${v.n}</button>`).join("")}</div>
     <div class="gwrap" id="gwrap"><button class="gfs" id="gdFull" type="button" aria-label="Карта на цял екран">⤢ Цял екран</button><div id="gmap" style="height:max(420px,calc(100vh - 230px));border-radius:16px;border:1px solid var(--line);overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${GUIDE&&hasL?"":`<div class="muted" style="padding:16px;text-align:center">${GUIDEbusy?'<div class="thinking"><span class="spin"></span>Търся какво има около теб…</div>':esc(GUIDEerr|| (hasL?"Зареждам картата…":"Картата работи в приложението FIT за Android."))}${GUIDEerr?'<div style="margin-top:8px"><button class="btn ghost sm" id="gdRetry" type="button">Опитай пак</button></div>':""}</div>`}</div>
     </div>
-    <div class="row" style="justify-content:space-between"><span class="muted" style="font-size:13px">${GUIDE?(GUIDE.loading?'<span class="thinking" style="display:inline-flex"><span class="spin"></span>Зареждам места наоколо…</span>':GUIDE.failed?'Сървърът за места не отговори. <button class="btn ghost sm" id="gdRetry2" type="button">Опитай пак</button>':items.length+" места в радиус "+guideRadius+" км"):""}</span>
+    <div class="row" style="justify-content:space-between"><span class="muted" style="font-size:13px">${GUIDE&&GUIDE.me&&GUIDE.me.approx?'<b style="color:var(--go)">Център на София</b> (GPS не е наличен) · ':''}${GUIDE?(GUIDE.loading?'<span class="thinking" style="display:inline-flex"><span class="spin"></span>Зареждам места наоколо…</span>':GUIDE.failed?'Сървърът за места не отговори. <button class="btn ghost sm" id="gdRetry2" type="button">Опитай пак</button>':items.length+" места в радиус "+guideRadius+" км"):""}</span>
       <label class="row" style="gap:6px;font-size:13px;font-weight:700">Радиус<select class="in" id="gdRad" style="min-height:36px;padding:4px 8px;width:auto">${[1,3,5,10].map(r=>`<option value="${r}" ${r===guideRadius?"selected":""}>${r} км</option>`).join("")}</select></label></div>
     <div>${items.slice(0,40).map((x,i)=>{ const d=distText(x.km); const c=GUIDE_CAT[x.cat]; return `<div class="ex"><div class="num" style="border-color:${c.c};color:${c.c}">${i+1}</div><div style="min-width:0"><div class="ex-name">${esc(x.name)}</div><div class="ex-meta">${esc(x.sub||c.n)} · ${d.km} км · пеша ${d.walk} · кола ${d.car}${x.hours?" · "+esc(x.hours):""}</div></div><button class="btn ghost sm" type="button" data-gnav="${i}">Как да стигна</button></div>`; }).join("")}</div>
     <p class="note">Карта: © OpenStreetMap, © CARTO. Местата са от OpenStreetMap. Местоположението ти остава на телефона.</p>`;
