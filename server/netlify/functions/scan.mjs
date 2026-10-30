@@ -1,0 +1,39 @@
+// FIT — сървър за AI разпознаване на фитнес уреди.
+// Ключът за Claude API е в променливата ANTHROPIC_API_KEY в Netlify (никога в приложението).
+const MODEL = process.env.FIT_MODEL || "claude-sonnet-5-5";
+const MAX_IMAGE = 1_500_000;   // ~1,1 MB JPEG в base64
+const MAX_PROMPT = 4000;
+const CORS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "POST, OPTIONS",
+  "access-control-allow-headers": "content-type",
+};
+const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { ...CORS, "content-type": "application/json" } });
+
+export default async (req) => {
+  if (req.method === "OPTIONS") return new Response("", { status: 204, headers: CORS });
+  if (req.method !== "POST") return json(405, { error: "POST only" });
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) return json(500, { error: "ANTHROPIC_API_KEY липсва в Netlify" });
+  let body;
+  try { body = await req.json(); } catch { return json(400, { error: "bad json" }); }
+  const { image, prompt } = body || {};
+  if (typeof image !== "string" || !image || image.length > MAX_IMAGE) return json(400, { error: "bad image" });
+  if (typeof prompt !== "string" || !prompt || prompt.length > MAX_PROMPT) return json(400, { error: "bad prompt" });
+  // Сървърът приема само заявки за фитнес уреди — не е общ достъп до Claude.
+  const guard = "Ти си фитнес треньор в приложението FIT. Отговаряй само за фитнес уреди и упражнения. Ако заявката е за друго, върни {\"equipment\":\"\"}.\n\n";
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({
+      model: MODEL, max_tokens: 1800,
+      messages: [{ role: "user", content: [
+        { type: "image", source: { type: "base64", media_type: "image/jpeg", data: image } },
+        { type: "text", text: guard + prompt },
+      ] }],
+    }),
+  });
+  if (!r.ok) return json(r.status === 429 ? 429 : 502, { error: "claude " + r.status });
+  const j = await r.json();
+  return json(200, { text: (j.content || []).map((c) => c.text || "").join("") });
+};

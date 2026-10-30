@@ -30,3 +30,12 @@ store/          икона 512×512 за Google Play
 
 - FIT → MAMA: бутонът „Отвори MAMA“ отваря инсталираното приложение (`bg.ngerchev.mama`), иначе сваля MAMA.apk.
 - MAMA → FIT: схема `bg.ngerchev.fit://open` отваря инсталирания FIT.
+
+## AI разпознаване на уреди (сървър)
+
+Папка `server/` е малък сървър за Netlify, който праща снимката към Claude. Ключът стои само в Netlify.
+
+1. netlify.com → **Add new site → Import an existing project → GitHub → ngerchev-code/FIT**.
+2. **Base directory:** `server` → Deploy.
+3. **Site configuration → Environment variables → Add:** `ANTHROPIC_API_KEY` = ключът от console.anthropic.com → **Deploy again**.
+4. Във FIT: меню → **AI разпознаване** → адрес `https://<името-на-сайта>.netlify.app/api/scan`.
