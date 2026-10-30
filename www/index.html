@@ -62,13 +62,15 @@ h1,h2,h3{text-wrap:balance;margin:0}
 .card.wx .pill{background:rgba(0,0,0,.12);color:var(--wx-ink)}
 .card.wx select.in{background:rgba(255,255,255,.65);color:#1A1300;border-color:transparent}
 .card.wx .card{background:rgba(255,255,255,.4);border-color:transparent;color:var(--wx-ink)}
-.card.guide-cta{flex-direction:row;align-items:center;gap:14px;cursor:pointer;background:var(--ink);color:var(--surface);border-color:var(--ink)}
-.card.guide-cta .ex-meta{color:color-mix(in srgb,var(--surface) 75%,transparent)}
+.card.guide-cta{flex-direction:row;align-items:center;gap:14px;cursor:pointer;background:#12A150!important;color:#fff!important;border-color:#12A150!important;text-align:left}
+.card.guide-cta .ex-name,.card.guide-cta b,.card.guide-cta strong{color:#fff!important}
+.card.guide-cta .ex-meta{color:rgba(255,255,255,.88)!important}
+.card.guide-cta .guide-ic{background:rgba(255,255,255,.2)!important;border-color:rgba(255,255,255,.45)!important;color:#fff!important;box-shadow:none!important}
 .guide-ic{width:50px;height:50px;border-radius:16px;background:var(--go);color:#fff;display:grid;place-items:center;flex:0 0 auto;position:relative}
 .guide-ic::after,.guide-btn::after{content:"";position:absolute;inset:-4px;border-radius:inherit;border:2px solid var(--go);opacity:0;animation:gpulse 2.6s ease-out infinite}
 @keyframes gpulse{0%{opacity:.7;transform:scale(.9)}70%{opacity:0;transform:scale(1.25)}100%{opacity:0}}
 .guide-btn{margin-left:auto;background:var(--go);color:#fff;border-color:var(--go);position:relative;border-radius:14px}
-@media (max-width:420px){.logo-sub{display:none}}
+
 .guide-btn + .who{margin-left:8px}
 .leaflet-popup-content{font-family:var(--f-body)}
 .who{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:5px 12px 5px 5px;font-weight:700;font-size:14px}
@@ -219,7 +221,6 @@ input.in,select.in,textarea.in{border:1px solid var(--line);background:var(--sur
 <header class="top"><div class="top-in">
   <button class="menu-btn" id="menuBtn" type="button" aria-label="Меню"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
   <div class="logo" aria-label="FIT — Fitness Intelligent Team"><span class="plate" aria-hidden="true"></span><span>FIT<small class="logo-sub">Fitness Intelligent Team</small></span></div>
-  <button class="menu-btn guide-btn" id="guideBtn" type="button" aria-label="GUIDE — карта наоколо"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.5s-5.5-4.9-5.5-9.3a5.5 5.5 0 0 1 11 0c0 4.4-5.5 9.3-5.5 9.3z"/><circle cx="12" cy="12" r="2"/><path d="M4.2 8.6A9 9 0 0 1 7 4.6M19.8 8.6A9 9 0 0 0 17 4.6"/><path d="M1.8 7.4A11.5 11.5 0 0 1 5 2.6M22.2 7.4A11.5 11.5 0 0 0 19 2.6" opacity=".55"/></svg></button>
   <button class="who" id="whoBtn" type="button" aria-label="Смени човек"><span class="ava" id="whoAva">?</span><span id="whoName">Профил</span></button>
 </div></header>
 
@@ -1970,7 +1971,7 @@ const ICON="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAA
 let DL=null;
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>show(b.dataset.tab));
 $("#menuBtn").onclick=openDrawer;
-$("#guideBtn").onclick=()=>show("guide");
+
 $("#chatFab").onclick=()=>{ if(P()) openChat(); };
 document.addEventListener("click",e=>{ const g=e.target.closest("[data-go]"); if(g){ if($("#sheetHost").innerHTML) closeSheet(); show(g.dataset.go); } const nv=e.target.closest("[data-nav]"); if(nv){ const [n,q]=nv.dataset.nav.split("|"); navSheet(n,q); } });
 $("#whoBtn").onclick=()=>{

@@ -110,7 +110,7 @@ async def run(native):
         await step("guide filter", 'document.querySelector("[data-gf=park]").click()')
         await step("guide radius", 'const s=document.querySelector("#gdRad"); s.value="5"; s.dispatchEvent(new Event("change"))'); await page.wait_for_timeout(1200)
         await step("guide nav", 'show("guide"); const b=document.querySelector("[data-gnav]"); b&&b.click()')
-        await step("guide header btn", 'document.querySelector("#guideBtn").click()')
+        await step("guide today card", 'show("today"); document.querySelector(".guide-cta").click()')
         await step("check updates", 'BUILD=10; checkUpdates(true)'); await page.wait_for_timeout(800)
         await step("drawer version", 'openDrawer()')
         await step("chat fab", 'document.querySelector("#chatFab").click()')
