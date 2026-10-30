@@ -37,6 +37,7 @@ async def run(native):
             if "api.open-meteo.com" in u: return await r.fulfill(json=WX)
             if "air-quality-api" in u: return await r.fulfill(json=AQ)
             if "overpass-api" in u: return await r.fulfill(json=OVERPASS)
+            if "api.github.com" in u: return await r.fulfill(json={"tag_name":"v1.0.12","body":"### Какво ново\n- Тест\n\nminNative: 11","assets":[{"name":"web.zip","browser_download_url":"https://x/web.zip"}]})
             if "nominatim" in u: return await r.fulfill(json=[{"lat":"42.69","lon":"23.32"}])
             if u.startswith("file://"): return await r.continue_()
             return await r.abort()
@@ -105,6 +106,8 @@ async def run(native):
             ans = await page.evaluate('CHAT.length?CHAT[CHAT.length-1].t:""')
             steps.append("ok   ↳ "+ans[:110])
         await step("chat go button", 'openChat(); const b=document.querySelector("[data-chatgo]"); b&&b.click()')
+        await step("check updates", 'BUILD=10; checkUpdates(true)'); await page.wait_for_timeout(800)
+        await step("drawer version", 'openDrawer()')
         await step("chat fab", 'document.querySelector("#chatFab").click()')
         # хоризонтален скрол
         overflow = await page.evaluate('document.documentElement.scrollWidth > window.innerWidth+1')

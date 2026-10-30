@@ -35,7 +35,21 @@ jobs:
 
       - name: Зависимости и синхронизация
         run: |
+          echo "MIN_NATIVE=$(cat android/NATIVE_VERSION)" >> "$GITHUB_ENV"
+          echo "{\"code\": ${{ github.run_number }}}" > www/build.json
           npm ci
+          (cd www && zip -qr ../web.zip .)
+          {
+            echo "FIT — Fitness Intelligent Team. Свали **FIT.apk** на телефона и го инсталирай."
+            echo "Постоянен линк: https://github.com/ngerchev-code/fit/releases/latest/download/FIT.apk"
+            echo "Инсталираното приложение получава новия код автоматично (web.zip) — без нова инсталация."
+            echo
+            echo "### Какво ново"
+            git log -1 --pretty=%B | grep -v -E "^(Co-Authored-By|Claude-Session):" | sed '/^$/d' | sed 's/^/- /'
+            echo
+            echo "minNative: $(cat android/NATIVE_VERSION)"
+          } > release.md
+          cat release.md
           npx cap sync android
 
       - name: Компилиране (APK + AAB за Google Play)
@@ -54,12 +68,10 @@ jobs:
           tag_name: v1.0.${{ github.run_number }}
           name: FIT 1.0.${{ github.run_number }}
           make_latest: true
-          body: |
-            FIT — Fitness Intelligent Team. Свали **FIT.apk** на телефона и го инсталирай.
-            Постоянен линк към последната версия: https://github.com/ngerchev-code/fit/releases/latest/download/FIT.apk
-            Файлът .aab е за качване в Google Play Console.
+          body_path: release.md
           files: |
             FIT.apk
+            web.zip
             FIT-*.apk
             FIT-*.aab
 

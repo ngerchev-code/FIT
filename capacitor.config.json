@@ -2,5 +2,16 @@
   "appId": "bg.ngerchev.fit",
   "appName": "FIT",
   "webDir": "www",
-  "android": { "backgroundColor": "#0C0F14" }
+  "android": {
+    "backgroundColor": "#0C0F14"
+  },
+  "plugins": {
+    "CapacitorUpdater": {
+      "autoUpdate": false,
+      "statsUrl": "",
+      "channelUrl": "",
+      "appReadyTimeout": 15000,
+      "resetWhenUpdate": true
+    }
+  }
 }
