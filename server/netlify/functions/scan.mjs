@@ -17,6 +17,23 @@ export default async (req) => {
   if (!key) return json(500, { error: "ANTHROPIC_API_KEY липсва в Netlify" });
   let body;
   try { body = await req.json(); } catch { return json(400, { error: "bad json" }); }
+  // Чат режим: { chat: [{role, content}, ...] } — първото съобщение е контекстът от приложението
+  if (Array.isArray(body?.chat)) {
+    const turns = body.chat.slice(-12).filter((t) => t && (t.role === "user" || t.role === "assistant") && typeof t.content === "string");
+    const total = turns.reduce((n, t) => n + t.content.length, 0);
+    if (!turns.length || total > 20000) return json(400, { error: "bad chat" });
+    const [ctx, ...rest] = turns;
+    const msgs = rest.length ? rest : [{ role: "user", content: "Здравей" }];
+    if (msgs[0].role !== "user") msgs.unshift({ role: "user", content: "Здравей" });
+    const rc = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: MODEL, max_tokens: 700, system: "Ти си асистентът на фитнес приложението FIT. Говориш само за фитнес, здраве, храна, активности, спорт и приложението.\n\n" + ctx.content.slice(0, 6000), messages: msgs }),
+    });
+    if (!rc.ok) return json(rc.status === 429 ? 429 : 502, { error: "claude " + rc.status });
+    const jc = await rc.json();
+    return json(200, { text: (jc.content || []).map((c) => c.text || "").join("") });
+  }
   const { image, prompt } = body || {};
   if (typeof image !== "string" || !image || image.length > MAX_IMAGE) return json(400, { error: "bad image" });
   if (typeof prompt !== "string" || !prompt || prompt.length > MAX_PROMPT) return json(400, { error: "bad prompt" });
