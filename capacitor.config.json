@@ -1,0 +1,6 @@
+{
+  "appId": "bg.ngerchev.fit",
+  "appName": "FIT",
+  "webDir": "www",
+  "android": { "backgroundColor": "#0C0F14" }
+}

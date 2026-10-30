@@ -1,0 +1,78 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+    paths: ["www/**", "android/**", "package.json", "capacitor.config.json", ".github/workflows/android.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+      FIT_STORE_PASSWORD: ${{ secrets.FIT_STORE_PASSWORD }}
+      FIT_KEY_PASSWORD: ${{ secrets.FIT_KEY_PASSWORD }}
+      FIT_KEY_ALIAS: ${{ secrets.FIT_KEY_ALIAS }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Зависимости и синхронизация
+        run: |
+          npm ci
+          npx cap sync android
+
+      - name: Компилиране (APK + AAB за Google Play)
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          set -o pipefail
+          ./gradlew --no-daemon --stacktrace assembleRelease bundleRelease 2>&1 | tee ../gradle.log
+          cp app/build/outputs/apk/release/app-release.apk ../FIT-1.0.${VERSION_CODE}.apk
+          cp app/build/outputs/bundle/release/app-release.aab ../FIT-1.0.${VERSION_CODE}.aab
+          cp app/build/outputs/apk/release/app-release.apk ../FIT.apk
+
+      - name: Издание (Release) с APK за сваляне от телефона
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: FIT 1.0.${{ github.run_number }}
+          make_latest: true
+          body: |
+            FIT — Fitness Intelligent Team. Свали **FIT.apk** на телефона и го инсталирай.
+            Постоянен линк към последната версия: https://github.com/ngerchev-code/fit/releases/latest/download/FIT.apk
+            Файлът .aab е за качване в Google Play Console.
+          files: |
+            FIT.apk
+            FIT-*.apk
+            FIT-*.aab
+
+      - name: Доклад при грешка
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "Компилирането на APK #${{ github.run_number }} спря."
+            echo
+            echo '```'
+            if [ -f gradle.log ]; then grep -nE "What went wrong|error:|FAILED|Exception" gradle.log | head -60; echo "-----"; tail -120 gradle.log; else echo "gradle.log липсва (грешката е преди компилирането)"; fi
+            echo '```'
+          } > report.md
+          gh issue create --repo "${GITHUB_REPOSITORY}" --title "APK грешка #${{ github.run_number }}" --body-file report.md || true
