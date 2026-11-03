@@ -85,6 +85,7 @@
         if (!x || x.state !== "active") throw fail("invalid_set");
         if (!valid(a.reps, 0, 500) || !valid(a.weightKg, 0, 1000)) throw fail("invalid_values");
         x.state = "completed"; x.endedAt = at; x.reps = a.reps; x.weightKg = a.weightKg; x.source = a.source || "manual"; x.version++;
+        if (valid(a.hrAvg, 30, 240)) { x.hrAvg = Math.round(a.hrAvg); x.hrSource = "wearable"; }
         const e = exerciseOf(s, x.exerciseId);
         const rest = a.restSec != null ? a.restSec : (e ? e.restSec : 0);
         if (rest > 0) { s.restUntil = new Date(Date.parse(at) + rest * 1000).toISOString(); s.restFor = x.exerciseId; }
@@ -308,9 +309,11 @@
       source: "Отметки и серии, потвърдени от теб (самоотчет и ръчен запис)" };
   }
 
+  /** Часовник с разминаване на часа: ако времето от устройството е на повече от 5 мин от телефона, ползваме телефона. */
+  function trustAt(at, now) { const n = now ? Date.parse(now) : Date.now(); const t = Date.parse(at || ""); return Number.isFinite(t) && Math.abs(t - n) <= 300000 ? new Date(t).toISOString() : new Date(n).toISOString(); }
   const API = { uuid, newSession, apply, replay, summary, completedSets, activeSet, lastByMachine, planQuick, recovery, applyLoad,
     SKIP_REASONS, ALTERNATIVES, validateSkip, alternativesFor, missedDays, resolveSkip,
-    planHorizons, revisePlan, monthlyReview, monthIndex, addMonths, GOAL_FOCUS };
+    planHorizons, revisePlan, monthlyReview, monthIndex, addMonths, GOAL_FOCUS, trustAt };
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   root.FITCore = API;
 })(typeof window !== "undefined" ? window : globalThis);

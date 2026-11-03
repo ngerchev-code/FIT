@@ -107,4 +107,15 @@ t("Месечен преглед: редовност и безопасна пр�
   assert.equal(C.monthlyReview({ log: tired, from: "2026-10-01", to: "2026-10-31", days: 3 }).load, 0.9);
 });
 
+t("Часовник: пулс от часовника, разминат час, дублирани действия от опашката", () => {
+  let s = C.newSession({ exercises: [{ id: "e1", machineId: "m", targetKg: 40 }] });
+  s = C.apply(s, { type: "START_WORKOUT", opId: "w0" });
+  const q = [{ type: "START_SET", opId: "w1", setId: "a", at: C.trustAt("2020-01-01T00:00:00Z") },
+             { type: "COMPLETE_SET", opId: "w2", setId: "a", reps: 10, weightKg: 40, source: "wearable", hrAvg: 128.6 }];
+  s = C.replay(s, q).session; s = C.replay(s, q).session; s = C.replay(s, q.slice(1)).session;
+  const x = s.sets[0]; assert.equal(s.sets.length, 1); assert.equal(x.hrAvg, 129); assert.equal(x.source, "wearable");
+  assert.ok(Math.abs(Date.parse(x.startedAt) - Date.now()) < 60000, "грешният час на часовника е заменен");
+  assert.equal(C.trustAt("2026-11-03T10:02:00Z", "2026-11-03T10:00:00Z"), "2026-11-03T10:02:00.000Z");
+});
+
 console.log(`\n${n} теста — всички минаха`);

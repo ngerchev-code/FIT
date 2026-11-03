@@ -43,6 +43,7 @@ jobs:
             echo "FIT — Fitness Intelligent Team. Свали **FIT.apk** на телефона и го инсталирай."
             echo "Постоянен линк: https://github.com/ngerchev-code/fit/releases/latest/download/FIT.apk"
             echo "Инсталираното приложение получава новия код автоматично (web.zip) — без нова инсталация."
+            echo "Часовник (Wear OS, напр. Galaxy Watch Ultra): **FIT-watch.apk** — инсталира се на часовника през Wear Installer / ADB."
             echo
             echo "### Какво ново"
             git log -1 --pretty=%B | grep -v -E "^(Co-Authored-By|Claude-Session):" | sed '/^$/d' | sed 's/^/- /'
@@ -61,6 +62,7 @@ jobs:
           cp app/build/outputs/apk/release/app-release.apk ../FIT-1.0.${VERSION_CODE}.apk
           cp app/build/outputs/bundle/release/app-release.aab ../FIT-1.0.${VERSION_CODE}.aab
           cp app/build/outputs/apk/release/app-release.apk ../FIT.apk
+          cp wear/build/outputs/apk/release/wear-release.apk ../FIT-watch.apk
 
       - name: Издание (Release) с APK за сваляне от телефона
         uses: softprops/action-gh-release@v2
@@ -71,6 +73,7 @@ jobs:
           body_path: release.md
           files: |
             FIT.apk
+            FIT-watch.apk
             web.zip
             FIT-*.apk
             FIT-*.aab
