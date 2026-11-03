@@ -87,4 +87,24 @@ t("B: пропусната тренировка — причина, алтерн
   assert.equal(C.resolveSkip({ reason: "private", details: "x", alternative: "rest", confirmed: true }).changes.skip.details, "");
 });
 
+t("G: смяна на цел в месец 4 → ревизия 6/9/12 с обяснение", () => {
+  const p0 = C.planHorizons({ goals: ["fat"], days: 3, start: "2026-07-01" });
+  assert.deepEqual(Object.keys(p0.horizons), ["6", "9", "12"]);
+  assert.equal(p0.horizons[12].date, "2027-07-01");
+  assert.match(p0.note, /не обещани/);
+  const r = C.revisePlan({ oldGoals: ["fat"], newGoals: ["muscle", "posture"], start: "2026-07-01", today: "2026-10-15", days: 3 });
+  assert.equal(r.revision.month, 4);
+  assert.deepEqual(r.plan.goals, ["muscle", "posture"]);
+  assert.ok(r.revision.why.length >= 3 && /Месец 4/.test(r.revision.why[0]));
+  assert.equal(r.plan.horizons[6].date, "2027-01-01", "датите на хоризонтите остават спрямо началото");
+});
+
+t("Месечен преглед: редовност и безопасна прогресия", () => {
+  const log = {}; ["2026-10-05","2026-10-07","2026-10-09","2026-10-12","2026-10-14","2026-10-16","2026-10-19","2026-10-21","2026-10-23","2026-10-26","2026-10-28"].forEach(d => log[d] = { complete: true });
+  const r = C.monthlyReview({ log, sessions: [], from: "2026-10-01", to: "2026-10-31", days: 3 });
+  assert.ok(r.adherence >= 80); assert.ok(r.load <= 1.1);
+  const tired = { "2026-10-02": { skip: { reason: "fatigue" } }, "2026-10-09": { skip: { reason: "injury" } }, "2026-10-12": { rest: {} } };
+  assert.equal(C.monthlyReview({ log: tired, from: "2026-10-01", to: "2026-10-31", days: 3 }).load, 0.9);
+});
+
 console.log(`\n${n} теста — всички минаха`);

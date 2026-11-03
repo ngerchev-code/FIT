@@ -231,8 +231,86 @@
     return { ok: true, changes };
   }
 
+
+  /* ---------- Път за 6 / 9 / 12 месеца (хоризонти за планиране, не обещани резултати) ---------- */
+  const GOAL_FOCUS = {
+    fat: ["Движение всеки ден и 2–3 силови тренировки", "Обиколка на талията и енергия — не само кантарът", "Навик за хранене, който можеш да държиш"],
+    muscle: ["Техника на основните движения", "Плавно покачване на тежестта (двойна прогресия)", "Достатъчно протеин и сън"],
+    posture: ["Горен гръб, лопатки и корем във всяка тренировка", "Мобилност на гръдния отдел и таза", "Почивки от седене през деня"],
+    strength: ["Основни движения с безупречна техника", "Малки стъпки в тежестта, по-малко повторения", "Пълно възстановяване между тежките дни"],
+    tone: ["Кръгови тренировки и издръжливост", "Кардио 2 пъти седмично", "Повече повторения с контрол"],
+    health: ["Редовност преди интензивност", "Разходки, мобилност и сън", "Енергия през деня"]
+  };
+  const PHASES12 = [
+    { from: 1, to: 2, name: "Основа", focus: "навик, техника, леки тежести" },
+    { from: 3, to: 4, name: "Натрупване", focus: "повече серии, стабилен ритъм" },
+    { from: 5, to: 6, name: "Прогресия", focus: "плавно по-тежко, по-малко почивка" },
+    { from: 7, to: 7, name: "Разтоварване и преглед", focus: "по-лека седмица, оценка, нови цели" },
+    { from: 8, to: 10, name: "Специализация", focus: "фокус върху главната цел" },
+    { from: 11, to: 12, name: "Устойчивост", focus: "затвърждаване, план за следващата година" }
+  ];
+  function addMonths(iso, m) { const d = new Date(iso + "T12:00:00"); d.setMonth(d.getMonth() + m); return d.toISOString().slice(0, 10); }
+  function monthIndex(start, today) {
+    const a = new Date(start + "T12:00:00"), b = new Date(today + "T12:00:00");
+    let m = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()) + 1;
+    if (b.getDate() < a.getDate()) m -= 1;
+    return Math.max(1, m);
+  }
+  function planHorizons(o) {
+    const goals = (o.goals && o.goals.length) ? o.goals : ["health"];
+    const days = o.days || 3, start = o.start;
+    const markers = goals.flatMap(g => GOAL_FOCUS[g] || []).slice(0, 5);
+    const sessions = m => Math.round(m * 4.3 * days * 0.8);
+    const H = {};
+    [6, 9, 12].forEach(m => {
+      H[m] = { months: m, date: addMonths(start, m),
+        process: [`Около ${sessions(m)} тренировки (${days} седмично при 80% редовност)`].concat(
+          m === 6 ? ["Уверена техника на всички уреди в програмата", markers[0] || ""] :
+          m === 9 ? ["Самостоятелно планиране на седмицата", markers[1] || ""] :
+                    ["Тренировките са част от живота ти", markers[2] || ""]).filter(Boolean),
+        phases: PHASES12.filter(p => p.from <= m) };
+    });
+    return { goals, start, days, level: o.level || "new", horizons: H, phases: PHASES12, markers,
+      note: "Това са хоризонти за планиране, а не обещани резултати. Преглеждаме ги всеки месец." };
+  }
+  /** Ревизия при смяна на целта (сценарий G): изминатото се запазва, оставащите месеци се пренареждат. */
+  function revisePlan(o) {
+    const month = monthIndex(o.start, o.today);
+    const old = o.oldGoals || [], neu = o.newGoals || [];
+    const added = neu.filter(g => !old.includes(g)), removed = old.filter(g => !neu.includes(g));
+    const plan = planHorizons({ goals: neu, days: o.days, start: o.start, level: o.level });
+    const why = [];
+    why.push(`Месец ${month}: изминалите ${month - 1} мес. остават в историята — нищо не се губи.`);
+    if (added.length) why.push("Нов фокус: " + added.map(g => (GOAL_FOCUS[g] || [g])[0]).join("; ") + ".");
+    if (removed.length) why.push("По-малко внимание на предишния фокус, без рязко сваляне на натоварването.");
+    why.push("Първите 2 седмици след смяната са преходни — същият обем, нова насока, после плавна прогресия.");
+    return { plan, revision: { at: o.today, month, from: old, to: neu, why } };
+  }
+  /** Месечен преглед: редовност, обем, почивка → съвет. Никога над +10% натоварване. */
+  function monthlyReview(o) {
+    const { log = {}, sessions = [], from, to, days = 3 } = o;
+    const inRange = d => d >= from && d <= to;
+    const planned = Math.max(1, Math.round(((Date.parse(to) - Date.parse(from)) / 864e5 + 1) / 7 * days));
+    const done = Object.keys(log).filter(d => inRange(d) && log[d].complete).length;
+    const skipped = Object.keys(log).filter(d => inRange(d) && log[d].skip);
+    const rest = Object.keys(log).filter(d => inRange(d) && log[d].rest).length;
+    const ss = sessions.filter(s => s.state === "completed" && inRange((s.endedAt || s.updatedAt || "").slice(0, 10)));
+    const sets = ss.reduce((a, s) => a + s.sets.filter(x => x.state === "completed").length, 0);
+    const vol = Math.round(ss.reduce((a, s) => a + s.sets.reduce((b, x) => b + (x.state === "completed" ? (x.weightKg || 0) * (x.reps || 0) : 0), 0), 0));
+    const adherence = Math.min(100, Math.round(done / planned * 100));
+    const hurt = skipped.filter(d => ["injury", "illness", "fatigue"].includes(log[d].skip.reason)).length + rest;
+    let advice, load;
+    if (hurt >= 3) { advice = "Много дни с умора или болка. Следващия месец: по-лека програма и повече възстановяване."; load = 0.9; }
+    else if (adherence >= 80) { advice = "Отлична редовност. Следващия месец: малка прогресия (до +10%)."; load = 1.1; }
+    else if (adherence >= 50) { advice = "Добра основа. Задържаме натоварването и търсим по-удобни дни или по-кратки тренировки."; load = 1; }
+    else { advice = "Животът се случва. По-кратки тренировки (20–30 мин) и 1 ден по-малко седмично, ако помага."; load = 1; }
+    return { planned, done, adherence, skipped: skipped.length, rest, sets, volumeKg: vol, advice, load,
+      source: "Отметки и серии, потвърдени от теб (самоотчет и ръчен запис)" };
+  }
+
   const API = { uuid, newSession, apply, replay, summary, completedSets, activeSet, lastByMachine, planQuick, recovery, applyLoad,
-    SKIP_REASONS, ALTERNATIVES, validateSkip, alternativesFor, missedDays, resolveSkip };
+    SKIP_REASONS, ALTERNATIVES, validateSkip, alternativesFor, missedDays, resolveSkip,
+    planHorizons, revisePlan, monthlyReview, monthIndex, addMonths, GOAL_FOCUS };
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   root.FITCore = API;
 })(typeof window !== "undefined" ? window : globalThis);
