@@ -13,6 +13,10 @@ Android приложение за начинаещи във фитнеса: ск
 - **Веднага, като уеб приложение.** Отвори https://ngerchev-code.github.io/FIT/ в Safari, натисни „Сподели“ и избери „Добави към началния екран“. За целта първо трябва еднократно да се включи **Settings → Pages → Source: GitHub Actions**.
 - **Като приложение.** Проектът е в `ios/` (Capacitor 7, Swift Package Manager), а `.github/workflows/ios.yml` го компилира на macOS. За App Store или TestFlight е нужен Apple Developer акаунт (подпис и сертификат).
 
+## Часовник (Wear OS, напр. Galaxy Watch Ultra)
+
+`FIT-watch.apk` от Releases е придружител на FIT за Android. Има същото applicationId и същия подпис, затова двете приложения се свързват автоматично. Инсталирането става през ADB по Wi-Fi: на часовника се включват опциите за разработчици, после „ADB debugging“ и „Wireless debugging“. За самото инсталиране на телефона може да се ползва Wear Installer 2 или Bugjaeger.
+
 ## Състояние и план
 
 Виж `docs/IMPLEMENTATION_STATUS.md` и `CHANGELOG.md`. Заданието е в `docs/CLAUDE_IMPLEMENTATION_BRIEF.md`.
