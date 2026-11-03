@@ -16,7 +16,7 @@ import org.json.JSONObject;
  * (както обаждане или Viber), така че тренировката се управлява и от китката, без отделно приложение.
  */
 public class WorkoutNotifier {
-    static final String CHANNEL = "fit_live";
+    static final String CHANNEL = "fit_live2";
     static final int ID = 7800;
     static final String ACTION = "bg.ngerchev.fit.WORKOUT_ACTION";
 
@@ -24,10 +24,11 @@ public class WorkoutNotifier {
         if (Build.VERSION.SDK_INT < 26) return;
         NotificationManager nm = c.getSystemService(NotificationManager.class);
         if (nm == null || nm.getNotificationChannel(CHANNEL) != null) return;
-        NotificationChannel ch = new NotificationChannel(CHANNEL, "Тренировка на живо", NotificationManager.IMPORTANCE_DEFAULT);
+        NotificationChannel ch = new NotificationChannel(CHANNEL, "Тренировка на живо", NotificationManager.IMPORTANCE_HIGH);
         ch.setDescription("Серии, почивка и смяна на уред — от телефона и часовника");
         ch.setSound(null, null);
-        ch.enableVibration(false);
+        ch.enableVibration(true);
+        ch.setVibrationPattern(new long[]{0, 180});
         nm.createNotificationChannel(ch);
     }
 
@@ -79,7 +80,8 @@ public class WorkoutNotifier {
                 .setSmallIcon(R.drawable.ic_stat_fit)
                 .setColor(0xFF12A150)
                 .setCategory(NotificationCompat.CATEGORY_WORKOUT)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setVibrate(new long[]{0, 180})
                 .setOnlyAlertOnce(true)
                 .setAutoCancel(false)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
