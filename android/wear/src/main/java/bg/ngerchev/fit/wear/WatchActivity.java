@@ -98,12 +98,29 @@ public class WatchActivity extends Activity implements SensorEventListener {
         box.setPadding(pad, pad / 2 + dp(6), pad, pad);
         scroll.addView(box, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
         setContentView(scroll);
+        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) { phoneWarning(); return; }
         render();
+    }
+
+    /** Версията за часовник е инсталирана на телефон — тя замества FIT за телефона. Обясняваме как да се върне. */
+    boolean onPhone() { return !getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH); }
+
+    void phoneWarning() {
+        box.removeAllViews();
+        TextView logo = text("FIT", 22, GO, true);
+        logo.setLetterSpacing(0.15f);
+        text("Това е версията за ЧАСОВНИК", 18, HOT, true);
+        text("Инсталирана е на телефона и замени FIT за телефона. Данните ти са запазени.", 14, INK, false);
+        text("Свали FIT.apk и го инсталирай отново — всичко се връща. FIT-watch.apk се слага само на часовника.", 13, MUTED, false);
+        button(box, "Свали FIT за телефона", GO, Color.WHITE, 56, v -> {
+            try { startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/ngerchev-code/FIT/releases/latest/download/FIT.apk"))); } catch (Exception ignored) { }
+        });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        if (onPhone()) return;
         live = this;
         try { onPhoneState(prefs.getString("state", "{}")); } catch (Exception ignored) { }
         send(op("REQUEST_STATE"), false);
@@ -115,6 +132,7 @@ public class WatchActivity extends Activity implements SensorEventListener {
     @Override
     protected void onPause() {
         super.onPause();
+        if (onPhone()) return;
         if (live == this) live = null;
         ui.removeCallbacks(tick);
         ui.removeCallbacks(resend);
