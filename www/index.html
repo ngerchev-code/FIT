@@ -2222,15 +2222,15 @@ function rLive(){
   v.innerHTML=`
     <div class="row" style="justify-content:space-between;align-items:center"><div><p class="eyebrow">Тренировка на живо</p><div class="live-clock mono" id="lvClock">${clockText(s)}</div></div>
       <span class="live-state" style="background:${st[1]}">${st[0]}</span></div>
-    <div class="chips" style="flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px">${s.exercises.map((x,i)=>{ const c=FC.completedSets(s,x.id).length; return `<button class="chip" type="button" data-lx="${x.id}" aria-pressed="${x.id===e.id}" style="flex:0 0 auto" ${act?"disabled":""}>${i+1}. ${esc(x.machine||x.name)} <b class="mono" style="margin-left:6px">${c}/${x.targetSets}</b></button>`; }).join("")}</div>
+    <div class="chips" style="flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px">${s.exercises.map((x,i)=>{ const c=FC.completedSets(s,x.id).length; return `<button class="chip" type="button" data-lx="${x.id}" aria-pressed="${x.id===e.id}" style="flex:0 0 auto" ${act?"disabled":""}>${i+1}. ${esc(String(x.machineId).startsWith("bw-")?x.name:(x.machine||x.name))} <b class="mono" style="margin-left:6px">${c}/${x.targetSets}</b></button>`; }).join("")}</div>
     <div class="card live-card">
       ${e.machine||e.cue?`<p class="eyebrow">${esc(e.machine||"")}${e.machine&&e.cue?" · ":""}${esc(e.cue||"")}</p>`:""}
       <div class="h2" style="margin:0">${esc(e.name)}</div>
       <div class="muted">Цел: ${e.targetSets} × ${e.targetReps}${cardio?" мин":""}${!cardio&&!mob&&e.targetKg?" · "+e.targetKg+" kg":""}${last&&!cardio?` · последно ${last.weightKg} kg × ${last.reps}`:""}</div>
       ${resting?`<div class="rest-ring"><div class="mono" id="lvRest">${restText(s)}</div><span>почивка</span></div>
         <div class="grid2"><button class="btn ghost" id="lvRest30" type="button">+30 сек</button><button class="btn ghost" id="lvSkipRest" type="button">Пропусни</button></div>`:""}
-      ${!cardio&&!mob?`<div class="stepper"><span>Тежест</span><button type="button" data-kg="-2.5" aria-label="Намали тежестта">−</button><b class="mono" id="lvKg">${liveKg} kg</b><button type="button" data-kg="2.5" aria-label="Увеличи тежестта">+</button></div>`:""}
-      <div class="stepper"><span>${cardio?"Минути":"Повторения"}</span><button type="button" data-rp="-1" aria-label="Намали">−</button><b class="mono" id="lvReps">${liveReps}</b><button type="button" data-rp="1" aria-label="Увеличи">+</button></div>
+      ${!cardio&&!mob&&!String(e.machineId).startsWith("bw-")?`<div class="stepper"><span>Тежест</span><button type="button" data-kg="-2.5" aria-label="Намали тежестта">−</button><b class="mono" id="lvKg">${liveKg} kg</b><button type="button" data-kg="2.5" aria-label="Увеличи тежестта">+</button></div>`:""}
+      <div class="stepper"><span>${e.unit&&/сек/.test(e.unit)?"Секунди":(cardio||e.unit==="мин")?"Минути":"Повторения"}</span><button type="button" data-rp="-1" aria-label="Намали">−</button><b class="mono" id="lvReps">${liveReps}</b><button type="button" data-rp="1" aria-label="Увеличи">+</button></div>
       ${s.state==="paused"?`<button class="btn block live-main" id="lvResume" type="button">Продължи</button>`:
         act?`<button class="btn hot block live-main" id="lvEnd" type="button">Край на серията · запиши</button><button class="btn ghost block" id="lvCancelSet" type="button">Отмени серията</button>`:
         `<button class="btn block live-main" id="lvStart" type="button">${done.length>=e.targetSets?"Още една серия (по желание)":"Започни серия "+(done.length+1)}</button>`}
@@ -2267,7 +2267,7 @@ function autoAdvance(){
   const e=s.exercises.find(x=>x.id===s.activeExerciseId); if(!e||FC.completedSets(s,e.id).length<e.targetSets) return;
   const i=s.exercises.indexOf(e); const order=s.exercises.slice(i+1).concat(s.exercises.slice(0,i));
   const n=order.find(x=>FC.completedSets(s,x.id).length<x.targetSets);
-  if(n){ liveDo({type:"SWITCH_EXERCISE",exerciseId:n.id}); toast("Готово ✓","Следва: "+(n.machine||n.name)); }
+  if(n){ liveDo({type:"SWITCH_EXERCISE",exerciseId:n.id}); toast("Готово ✓","Следва: "+(String(n.machineId).startsWith("bw-")?n.name:(n.machine||n.name))); }
   else toast("Всички уреди са готови ✓","Натисни „Завърши тренировката“ или направи още серия.");
 }
 function clockText(s){ const sec=s.startedAt?Math.max(0,Math.round((Date.now()-Date.parse(s.startedAt))/1000)):0; return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0"); }
@@ -2332,7 +2332,7 @@ function missedSheet(d){
         if(r.changes.loadFactor<1) p.loadNext=r.changes.loadFactor;
         save(); closeSheet(); scheduleNotifs();
         toast("Разбрано", st.alternative==="reschedule"?"Пренасрочено за "+new Date(st.newTime).toLocaleString("bg-BG",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):FC.ALTERNATIVES[st.alternative]+" — без двойно натоварване.");
-        render(); });
+        render(); if(["home","walk","mobility"].includes(st.alternative)) setTimeout(()=>offerAltNow(st.alternative),400); });
     });
   draw();
 }
@@ -2714,6 +2714,94 @@ if(NATIVE && WB()){
     setTimeout(drain,1200);
     const App=Plug("App"); if(App) App.addListener("resume",drain);
   }catch(e){}
+}
+
+/* ============ НЕ МОГА ДНЕС: АЛТЕРНАТИВА ДНЕС ИЛИ УТРЕ НА ДРУГО МЯСТО ============ */
+function todayGroups(fromIso){
+  const p=P(); const d=fromIso?new Date(fromIso+"T12:00:00"):new Date(); const di=dayIndexFor(p,d.getDay());
+  if(di<0) return ["legs","back","chest","core"];
+  return buildDay(p,di).list.map(it=>it.ex[2]).filter(g=>g!=="cardio");
+}
+function weatherFor(dayOffset){
+  try{ if(!WX||!WX.w||!WX.w.daily) return null; const d=WX.w.daily; const i=Math.min(dayOffset,d.time.length-1);
+    return dayIdea(d.weather_code[i], d.temperature_2m_max[i], d.wind_speed_10m_max[i], i); }catch(e){ return null; }
+}
+function altFor(env, minutes, reason, fromIso, dayOffset){
+  const p=P(); return FC.altPlan({env, minutes, reason, level:p.level, groups:todayGroups(fromIso), weather:weatherFor(dayOffset||0)});
+}
+function startAlt(plan, reason){
+  const p=P(), t=todayISO(); p.log[t]=p.log[t]||{}; p.log[t].alt={env:plan.env, reason:reason||"", at:new Date().toISOString()}; save();
+  startLive(plan.exercises.map(e=>Object.assign({},e)), "alt", 1);
+}
+function cantTodaySheet(){
+  const p=P(); let st={reason:"", when:"today", env:"home", mins:Math.min(30,p.minutes||30), at:""};
+  const tom=new Date(Date.now()+864e5); const defAt=tom.toISOString().slice(0,10)+"T"+(notifCfg().evening||"18:00");
+  const safe=()=>st.reason==="injury"||st.reason==="illness";
+  const draw=()=>{
+    const envs = safe()?["mobility"]:["home","park","walk","run","travel","mobility"];
+    if(!envs.includes(st.env)) st.env=envs[0];
+    const plan = st.when==="rest"||st.when==="gym" ? null : altFor(st.env, st.mins, st.reason, null, st.when==="tomorrow"?1:0);
+    sheet(`<div class="grab"></div><p class="eyebrow">Днес не мога в залата</p><div class="h2">Няма проблем — да намерим друг начин</div>
+      <b>Какво се случи? <span class="muted" style="font-weight:600">(по желание)</span></b>
+      <div class="chips">${Object.entries(FC.SKIP_REASONS).map(([k,n])=>`<button class="chip" type="button" data-cr="${k}" aria-pressed="${st.reason===k}">${esc(n)}</button>`).join("")}</div>
+      ${safe()?`<p class="note" style="margin:0">При болка или болест — само леко разтягане или почивка. Ако симптомите не минават, потърси лекар.</p>`:""}
+      <b>Кога?</b>
+      <div class="chips">${[["today","Днес, другаде"],["tomorrow","Утре, другаде"],["gym","Пренасрочи залата"],["rest","Почивка днес"]].filter(([k])=>!(safe()&&k==="gym")).map(([k,n])=>`<button class="chip" type="button" data-cw="${k}" aria-pressed="${st.when===k}">${n}</button>`).join("")}</div>
+      ${st.when==="today"||st.when==="tomorrow"?`<b>Къде?</b><div class="chips">${envs.map(k=>`<button class="chip" type="button" data-ce="${k}" aria-pressed="${st.env===k}">${esc(FC.ALT_ENV[k])}</button>`).join("")}</div>
+        <b>Колко време имаш?</b><div class="chips">${[15,20,30,45].map(n=>`<button class="chip" type="button" data-cm="${n}" aria-pressed="${st.mins===n}">${n} мин</button>`).join("")}</div>`:""}
+      ${st.when==="tomorrow"||st.when==="gym"?`<label>${st.when==="gym"?"Нов ден и час за залата":"Утре в"}<input class="in" id="ctAt" type="datetime-local" value="${esc(st.at||defAt)}"></label>`:""}
+      ${plan?`<div class="card" style="background:var(--surface-2);gap:6px"><b>${esc(plan.title)} · ${plan.minutes} мин</b><p class="muted" style="margin:0">${esc(plan.note)}</p>${plan.exercises.map(e=>`<div class="ex-meta">• ${esc(e.name)} — ${e.targetSets>1?e.targetSets+" × ":""}${e.targetReps} ${esc(e.unit||"")}</div>`).join("")}</div>`:""}
+      ${st.when==="rest"?`<p class="muted" style="margin:0">Почивката също е напредък. Следващата тренировка остава по план — без двойно натоварване.</p>`:""}
+      <button class="btn hot block" id="ctGo" type="button">${st.when==="today"?"▶ Започни сега":st.when==="tomorrow"?"Запази за утре":st.when==="gym"?"Пренасрочи":"Почивам днес"}</button>
+      <button class="btn ghost block" data-close type="button">Назад</button>`, h=>{
+        h.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeSheet);
+        h.querySelectorAll("[data-cr]").forEach(b=>b.onclick=()=>{ st.reason=st.reason===b.dataset.cr?"":b.dataset.cr; draw(); });
+        h.querySelectorAll("[data-cw]").forEach(b=>b.onclick=()=>{ st.when=b.dataset.cw; draw(); });
+        h.querySelectorAll("[data-ce]").forEach(b=>b.onclick=()=>{ st.env=b.dataset.ce; draw(); });
+        h.querySelectorAll("[data-cm]").forEach(b=>b.onclick=()=>{ st.mins=+b.dataset.cm; draw(); });
+        const at=$("#ctAt"); if(at) at.onchange=()=>{ st.at=at.value; };
+        $("#ctGo").onclick=()=>{
+          const t=todayISO(); p.log[t]=p.log[t]||{}; const reason=st.reason||"private";
+          if(st.when==="today"){ closeSheet(); startAlt(plan, st.reason); return; }
+          const when=(at&&at.value)||st.at||defAt;
+          const r=FC.resolveSkip({reason, alternative:st.when==="rest"?"rest":"reschedule", newTime:when, confirmed:true});
+          if(!r.ok) return toast("Провери","Избери ден и час.");
+          p.log[t].skip=r.changes.skip;
+          if(r.changes.reschedule){ p.resched=(p.resched||[]).filter(x=>!x.done&&x.from!==t); p.resched.push({from:t, at:when, done:false, env:st.when==="tomorrow"?st.env:"gym", minutes:st.mins}); }
+          if(r.changes.loadFactor<1) p.loadNext=r.changes.loadFactor;
+          save(); closeSheet(); scheduleNotifs();
+          toast("Разбрано", st.when==="rest"?"Почивка днес — следващата тренировка по план.":st.when==="tomorrow"?"Утре: "+FC.ALT_ENV[st.env]+" · "+st.mins+" мин":"Залата е пренасрочена.");
+          render(); };
+      }); };
+  draw();
+}
+/* пренасрочено „на друго място“ → днес се показва и пуска алтернативният план */
+(function(){ const base=planExercises; planExercises=function(){ const rs=reschedToday();
+  if(rs&&rs.env&&rs.env!=="gym"){ const pl=altFor(rs.env, rs.minutes||30, "", rs.from, 0); return pl.exercises.map(e=>Object.assign({},e)); }
+  return base.apply(this,arguments); }; })();
+(function(){ const base=rToday; rToday=function(){ base.apply(this,arguments);
+  const v=$("#v-today"); if(!v) return; const p=P(), t=todayISO(), rs=reschedToday();
+  const host=v.querySelector("#liveHost")||v.querySelector("#restHost");
+  if(rs&&rs.env&&rs.env!=="gym"&&!liveSession()){
+    const n=v.querySelector("#reschedNote"); if(n) n.innerHTML=`<span class="pill accent">Днес: ${esc(FC.ALT_ENV[rs.env])} · ${rs.minutes||30} мин — вместо пропуснатата тренировка</span>`;
+    const lg=$("#liveGo"); if(lg) lg.textContent="▶ Започни: "+FC.ALT_ENV[rs.env];
+    const rh=v.querySelector("#restHost"); if(rh&&!rh.querySelector("#altGo")){ rh.insertAdjacentHTML("afterbegin",`<button class="btn hot block live-main" id="altGo" type="button">▶ Започни: ${esc(FC.ALT_ENV[rs.env])}</button>`); $("#altGo").onclick=()=>startAlt(altFor(rs.env, rs.minutes||30, "", rs.from, 0)); }
+  }
+  if(host && !liveSession() && !(p.log[t]&&p.log[t].complete) && !v.querySelector("#cantGo")){
+    host.insertAdjacentHTML("beforeend",`<button class="btn ghost block" id="cantGo" type="button">Не мога днес · друго място или ден</button>`);
+    $("#cantGo").onclick=cantTodaySheet;
+  }
+  if(p.log[t]&&p.log[t].alt&&p.log[t].complete){ const n=v.querySelector("#reschedNote"); if(n) n.innerHTML=`<span class="pill good">Днес: ${esc(FC.ALT_ENV[p.log[t].alt.env]||"алтернатива")} ✓ — броим я като тренировка</span>`; }
+}; })();
+/* при пропусната тренировка: „у дома / разходка / мобилност“ → предложение да я направиш сега */
+function offerAltNow(alt){
+  const env = alt==="walk"?"walk":alt==="mobility"?"mobility":"home"; const pl=altFor(env,20,"",null,0);
+  sheet(`<div class="grab"></div><p class="eyebrow">Алтернатива</p><div class="h2">${esc(pl.title)} · 20 мин</div><p class="muted" style="margin:0">${esc(pl.note)}</p>
+    ${pl.exercises.map(e=>`<div class="ex-meta">• ${esc(e.name)} — ${e.targetSets>1?e.targetSets+" × ":""}${e.targetReps} ${esc(e.unit||"")}</div>`).join("")}
+    <button class="btn hot block" id="oaGo" type="button">▶ Започни сега</button><button class="btn ghost block" data-close type="button">По-късно</button>`, h=>{
+      h.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeSheet);
+      $("#oaGo").onclick=()=>{ closeSheet(); startAlt(pl,""); };
+    });
 }
 
 /* ============ СТАРТ ============ */

@@ -309,11 +309,54 @@
       source: "Отметки и серии, потвърдени от теб (самоотчет и ръчен запис)" };
   }
 
+
+  /* ---------- Алтернативно натоварване: днес не мога в залата / утре на друго място ---------- */
+  const BW = {
+    legs: [["Клякания", "повт.", "Тежестта на петите, коленете над пръстите"], ["Напади назад", "повт. на крак", "Изправен торс, коляното леко до пода"], ["Глутеус мост", "повт.", "Стисни седалището горе за 1 сек"], ["Качване на стол или стъпало", "повт. на крак", "Стабилен стол, цялото стъпало горе"]],
+    back: [["Супермен", "повт.", "Ръце и крака леко нагоре, без рязкост"], ["Y-T-W на пода", "повт.", "Лопатките назад и надолу"], ["Гребане с хавлия на дръжка на врата", "повт.", "Само на здрава врата; лактите назад"]],
+    chest: [["Лицеви опори (от колене при нужда)", "повт.", "Тялото в права линия"], ["Широки лицеви опори", "повт.", "Бавно надолу, 2 сек"]],
+    shoulders: [["Pike лицеви опори", "повт.", "Таза високо, главата между ръцете"], ["Планк с докосване на рамо", "повт.", "Без люлеене на таза"]],
+    arms: [["Кофички на стол", "повт.", "Лактите назад, раменете далеч от ушите"], ["Тесни лицеви опори", "повт.", "Лактите до тялото"]],
+    core: [["Планк", "сек", "Корем стегнат, без провисване"], ["Мъртва буболечка", "повт.", "Кръстът опрян в пода"], ["Странично планк", "сек на страна", "Тялото в права линия"]],
+    cardio: [["Jumping jacks", "сек", "Меко приземяване"], ["Бързо качване по стълби", "мин", "Темпо, при което още можеш да говориш"]],
+    mobility: [["Котка-крава", "повт.", "Бавно, с дишането"], ["Отваряне на таза 90/90", "повт.", "Без болка"], ["Разтягане на гърди на рамка на врата", "сек", "Лек натиск, без болка"], ["Завъртане на гръдния отдел", "повт. на страна", "Таза остава неподвижен"], ["Детска поза", "сек", "Дълбоко дишане"]]
+  };
+  const ENV = { home: "У дома, без уреди", travel: "На път / в хотела", park: "В парка", walk: "Навън: бързо ходене", run: "Навън: ходене и бягане", mobility: "Разтягане и мобилност" };
+  function altPlan(o) {
+    o = o || {};
+    let env = ENV[o.env] ? o.env : "home"; let swapped = null;
+    const minutes = Math.max(10, Math.min(60, o.minutes || 30));
+    const lvl = o.level === "adv" ? 2 : o.level === "mid" ? 1 : 0;
+    if ((o.reason === "injury" || o.reason === "illness") && env !== "mobility") { swapped = { from: env, why: o.reason === "injury" ? "болка или травма" : "болест" }; env = "mobility"; }
+    if (["walk", "run", "park"].includes(env) && o.weather && o.weather.bad) { swapped = { from: env, why: o.weather.why || "лошо време" }; env = "home"; }
+    const light = o.reason === "fatigue";
+    const reps = [10, 12, 15][lvl], hold = [20, 30, 45][lvl], sets = Math.max(1, [2, 3, 3][lvl] - (light ? 1 : 0));
+    const mk = (g, it, i) => ({ machineId: "bw-" + g + "-" + i, name: it[0], machine: ENV[env], group: g === "mobility" ? "mobility" : g, cue: it[2],
+      restSec: g === "mobility" ? 0 : 45, targetSets: g === "mobility" ? 1 : sets, targetKg: 0,
+      targetReps: it[1].startsWith("сек") ? hold : it[1] === "мин" ? 3 : reps, unit: it[1] });
+    let ex = [];
+    if (env === "mobility") ex = BW.mobility.map((it, i) => mk("mobility", it, i));
+    else if (env === "walk") ex = [{ machineId: "bw-walk", name: "Бързо ходене (може да говориш, но не и да пееш)", machine: ENV.walk, group: "cardio", restSec: 0, targetSets: 1, targetReps: Math.max(15, minutes - 5), targetKg: 0, cue: "Изправен, ръцете работят", unit: "мин" }, mk("mobility", BW.mobility[2], 2), mk("mobility", BW.mobility[3], 3)];
+    else if (env === "run") ex = [{ machineId: "bw-run", name: lvl ? "Интервали: 1 мин бягане / 2 мин ходене" : "Ходене с кратки отсечки леко бягане (30 сек)", machine: ENV.run, group: "cardio", restSec: 0, targetSets: 1, targetReps: Math.max(15, minutes - 5), targetKg: 0, cue: "Започни и завърши с 5 мин ходене", unit: "мин" }, mk("mobility", BW.mobility[1], 1)];
+    else {
+      const want = (o.groups && o.groups.length ? o.groups : ["legs", "back", "chest", "core"]).filter(g => BW[g] && g !== "mobility");
+      const order = [...new Set(want)].concat(["legs", "back", "chest", "core"].filter(g => !want.includes(g)));
+      const per = 45 + 45, budget = (minutes - 4) * 60; let used = 0; const pick = {};
+      for (let round = 0; round < 3 && used < budget; round++) for (const g of order) {
+        const it = BW[g][(pick[g] = (pick[g] ?? -1) + 1)]; if (!it) continue;
+        const cost = sets * per; if (used + cost > budget) continue; ex.push(mk(g, it, pick[g])); used += cost;
+      }
+      if (env === "park") ex.unshift({ machineId: "bw-park-walk", name: "Загрявка: бързо ходене до уредите", machine: ENV.park, group: "cardio", restSec: 0, targetSets: 1, targetReps: 5, targetKg: 0, cue: "Използвай пейка и ниски лостове, ако има", unit: "мин" });
+    }
+    return { env, title: ENV[env], minutes, exercises: ex, swapped, light,
+      note: swapped ? `Сменихме на „${ENV[env]}“ заради ${swapped.why}.` : light ? "По-леко заради умората — една серия по-малко." : "Същите мускулни групи като днешната тренировка, без уреди." };
+  }
+
   /** Часовник с разминаване на часа: ако времето от устройството е на повече от 5 мин от телефона, ползваме телефона. */
   function trustAt(at, now) { const n = now ? Date.parse(now) : Date.now(); const t = Date.parse(at || ""); return Number.isFinite(t) && Math.abs(t - n) <= 300000 ? new Date(t).toISOString() : new Date(n).toISOString(); }
   const API = { uuid, newSession, apply, replay, summary, completedSets, activeSet, lastByMachine, planQuick, recovery, applyLoad,
     SKIP_REASONS, ALTERNATIVES, validateSkip, alternativesFor, missedDays, resolveSkip,
-    planHorizons, revisePlan, monthlyReview, monthIndex, addMonths, GOAL_FOCUS, trustAt };
+    planHorizons, revisePlan, monthlyReview, monthIndex, addMonths, GOAL_FOCUS, trustAt, altPlan, ALT_ENV: ENV };
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   root.FITCore = API;
 })(typeof window !== "undefined" ? window : globalThis);

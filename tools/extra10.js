@@ -136,7 +136,7 @@ function rLive(){
   v.innerHTML=`
     <div class="row" style="justify-content:space-between;align-items:center"><div><p class="eyebrow">Тренировка на живо</p><div class="live-clock mono" id="lvClock">${clockText(s)}</div></div>
       <span class="live-state" style="background:${st[1]}">${st[0]}</span></div>
-    <div class="chips" style="flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px">${s.exercises.map((x,i)=>{ const c=FC.completedSets(s,x.id).length; return `<button class="chip" type="button" data-lx="${x.id}" aria-pressed="${x.id===e.id}" style="flex:0 0 auto" ${act?"disabled":""}>${i+1}. ${esc(x.machine||x.name)} <b class="mono" style="margin-left:6px">${c}/${x.targetSets}</b></button>`; }).join("")}</div>
+    <div class="chips" style="flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px">${s.exercises.map((x,i)=>{ const c=FC.completedSets(s,x.id).length; return `<button class="chip" type="button" data-lx="${x.id}" aria-pressed="${x.id===e.id}" style="flex:0 0 auto" ${act?"disabled":""}>${i+1}. ${esc(String(x.machineId).startsWith("bw-")?x.name:(x.machine||x.name))} <b class="mono" style="margin-left:6px">${c}/${x.targetSets}</b></button>`; }).join("")}</div>
     <div class="card live-card">
       ${e.machine||e.cue?`<p class="eyebrow">${esc(e.machine||"")}${e.machine&&e.cue?" · ":""}${esc(e.cue||"")}</p>`:""}
       <div class="h2" style="margin:0">${esc(e.name)}</div>
@@ -181,7 +181,7 @@ function autoAdvance(){
   const e=s.exercises.find(x=>x.id===s.activeExerciseId); if(!e||FC.completedSets(s,e.id).length<e.targetSets) return;
   const i=s.exercises.indexOf(e); const order=s.exercises.slice(i+1).concat(s.exercises.slice(0,i));
   const n=order.find(x=>FC.completedSets(s,x.id).length<x.targetSets);
-  if(n){ liveDo({type:"SWITCH_EXERCISE",exerciseId:n.id}); toast("Готово ✓","Следва: "+(n.machine||n.name)); }
+  if(n){ liveDo({type:"SWITCH_EXERCISE",exerciseId:n.id}); toast("Готово ✓","Следва: "+(String(n.machineId).startsWith("bw-")?n.name:(n.machine||n.name))); }
   else toast("Всички уреди са готови ✓","Натисни „Завърши тренировката“ или направи още серия.");
 }
 function clockText(s){ const sec=s.startedAt?Math.max(0,Math.round((Date.now()-Date.parse(s.startedAt))/1000)):0; return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0"); }

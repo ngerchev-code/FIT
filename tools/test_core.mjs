@@ -118,4 +118,17 @@ t("Часовник: пулс от часовника, разминат час, 
   assert.equal(C.trustAt("2026-11-03T10:02:00Z", "2026-11-03T10:00:00Z"), "2026-11-03T10:02:00.000Z");
 });
 
+t("Алтернатива: днес у дома, навън, при травма и лошо време", () => {
+  const h = C.altPlan({ env: "home", groups: ["legs", "back", "chest", "core"], level: "new", minutes: 30 });
+  assert.ok(h.exercises.length >= 4); assert.ok(h.exercises.every(e => e.targetKg === 0));
+  const gs = new Set(h.exercises.map(e => e.group)); ["legs", "back", "chest"].forEach(g => assert.ok(gs.has(g), "група " + g));
+  const secs = h.exercises.reduce((a, e) => a + e.targetSets * 90, 0); assert.ok(secs <= (30 - 4) * 60, "вписва се в 30 мин");
+  assert.equal(C.altPlan({ env: "home", reason: "injury" }).env, "mobility");
+  const bad = C.altPlan({ env: "park", weather: { bad: true, why: "дъжд" } });
+  assert.equal(bad.env, "home"); assert.match(bad.note, /дъжд/);
+  assert.equal(C.altPlan({ env: "walk", minutes: 40 }).exercises[0].targetReps, 35);
+  const tired = C.altPlan({ env: "home", reason: "fatigue", level: "mid" });
+  assert.ok(tired.exercises.filter(e => e.group !== "mobility").every(e => e.targetSets === 2), "по-леко при умора");
+});
+
 console.log(`\n${n} теста — всички минаха`);
