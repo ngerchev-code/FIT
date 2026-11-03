@@ -22,6 +22,7 @@ public class WorkoutActionReceiver extends BroadcastReceiver {
             f.setTimeZone(TimeZone.getTimeZone("UTC"));
             o.put("at", f.format(new Date()));
             String json = o.toString();
+            WorkoutNotifier.applyLocal(c, o); // известието и часовникът реагират веднага, дори FIT да е затворен
             WearBridgePlugin p = WearBridgePlugin.instance;
             if (p != null) p.deliver(json);
             else WearBridgePlugin.enqueue(c, json);

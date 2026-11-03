@@ -29,6 +29,8 @@ function liveDo(a){
 }
 async function restNotify(s){
   const LN=Plug("LocalNotifications"); if(!NATIVE||!LN) return;
+  let nativeRest=false; try{ nativeRest=!!(WB&&WB()); }catch(e){}
+  if(nativeRest){ try{ await LN.cancel({notifications:[{id:7700}]}); }catch(e){} return; } /* краят на почивката се вика от известието (и при затворено приложение) */
   try{
     await LN.cancel({notifications:[{id:7700}]});
     if(s.restUntil && Date.parse(s.restUntil)>Date.now()+3000 && s.state==="active")
@@ -158,7 +160,7 @@ function rLive(){
   v.querySelectorAll("[data-rp]").forEach(b=>b.onclick=()=>{ liveReps=Math.max(0,liveReps+ +b.dataset.rp); $("#lvReps").textContent=liveReps; });
   const on=(id,f)=>{ const el=$(id); if(el) el.onclick=f; };
   on("#lvStart",()=>{ liveDo({type:"START_SET",setId:FC.uuid(),weightKg:liveKg,reps:liveReps}); buzz(30); rLive(); });
-  on("#lvEnd",()=>{ const a=FC.activeSet(liveSession()); if(!a) return; liveDo({type:"COMPLETE_SET",setId:a.id,reps:liveReps,weightKg:cardio||mob?0:liveKg,source:"manual"}); buzz(60); rLive(); });
+  on("#lvEnd",()=>{ const a=FC.activeSet(liveSession()); if(!a) return; liveDo({type:"COMPLETE_SET",setId:a.id,reps:liveReps,weightKg:cardio||mob?0:liveKg,source:"manual"}); buzz(60); autoAdvance(); rLive(); });
   on("#lvCancelSet",()=>{ const a=FC.activeSet(liveSession()); if(a){ liveDo({type:"CANCEL_SET",setId:a.id}); rLive(); } });
   on("#lvSkipRest",()=>{ liveDo({type:"SKIP_REST"}); rLive(); });
   on("#lvRest30",()=>{ const s2=liveSession(); s2.restUntil=new Date(Date.parse(s2.restUntil)+30000).toISOString(); persistLive(s2); restNotify(s2); rLive(); });
@@ -172,6 +174,15 @@ function rLive(){
   liveTimer=setInterval(()=>{ if(TAB!=="live"){ clearInterval(liveTimer); return; } const s2=liveSession(); if(!s2) return;
     const c=$("#lvClock"); if(c) c.textContent=clockText(s2);
     const r=$("#lvRest"); if(r){ if(Date.parse(s2.restUntil)<=Date.now()){ buzz([120,80,120]); dropSound(); liveDo({type:"SKIP_REST"}); rLive(); } else r.textContent=restText(s2); } },1000);
+}
+/* FIT води: след последната серия на уред минава сам на следващия */
+function autoAdvance(){
+  const s=liveSession(); if(!s||s.state!=="active"||FC.activeSet(s)) return;
+  const e=s.exercises.find(x=>x.id===s.activeExerciseId); if(!e||FC.completedSets(s,e.id).length<e.targetSets) return;
+  const i=s.exercises.indexOf(e); const order=s.exercises.slice(i+1).concat(s.exercises.slice(0,i));
+  const n=order.find(x=>FC.completedSets(s,x.id).length<x.targetSets);
+  if(n){ liveDo({type:"SWITCH_EXERCISE",exerciseId:n.id}); toast("Готово ✓","Следва: "+(n.machine||n.name)); }
+  else toast("Всички уреди са готови ✓","Натисни „Завърши тренировката“ или направи още серия.");
 }
 function clockText(s){ const sec=s.startedAt?Math.max(0,Math.round((Date.now()-Date.parse(s.startedAt))/1000)):0; return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0"); }
 function restText(s){ const sec=Math.max(0,Math.ceil((Date.parse(s.restUntil)-Date.now())/1000)); return Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"); }

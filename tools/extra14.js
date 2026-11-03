@@ -29,7 +29,7 @@ function onWatchAction(json){
   if(!a||!a.type) return;
   if(a.type==="REQUEST_STATE") return pushWatch();
   const p=P(); if(!p){ ackWatch(a.opId); return pushWatch(); }
-  a.at=FC.trustAt(a.at);
+  if(String(a.opId||"").startsWith("w-")) a.at=FC.trustAt(a.at); else if(!a.at) a.at=new Date().toISOString();
   const s=liveSession();
   try{
     if(a.type==="START_PLAN"){
@@ -41,7 +41,7 @@ function onWatchAction(json){
       const act=FC.activeSet(s); if(act) liveDo({type:"CANCEL_SET",setId:act.id});
       if(FC.summary(liveSession()).sets) finishLive(); else { liveDo({type:"CANCEL_WORKOUT"}); toast("Часовник","Тренировката е прекратена без серии."); show("today"); }
     } else {
-      const n=FC.apply(s,a); if(n!==s){ persistLive(n); restNotify(n); }
+      const n=FC.apply(s,a); if(n!==s){ persistLive(n); restNotify(n); } if(a.type==="COMPLETE_SET") autoAdvance();
     }
   }catch(e){ /* невалидно в текущото състояние — потвърждаваме и пращаме истинското състояние */ }
   ackWatch(a.opId);
@@ -66,6 +66,8 @@ function watchSheet(){
   paint(null);
   if(NATIVE&&WB()) WB().status().then(paint).catch(()=>paint({nodes:0}));
 }
+/* известия за всички потребители: план за деня, напомняния, пропусната тренировка — и при затворено приложение */
+if(NATIVE) setTimeout(()=>{ try{ if(P()&&S.consent) scheduleNotifs(); }catch(e){} },4000);
 if(NATIVE && WB()){
   try{
     WB().addListener("watchAction",e=>onWatchAction(e.json));

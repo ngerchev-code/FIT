@@ -43,6 +43,9 @@
         <receiver
             android:name=".WorkoutActionReceiver"
             android:exported="false" />
+        <receiver
+            android:name=".RestAlarmReceiver"
+            android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

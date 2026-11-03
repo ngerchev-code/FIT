@@ -21,7 +21,7 @@ function consentSheet(next){
     <button class="btn block" id="csOk" type="button">Продължи</button>`, h=>{
       $("#scrim").onclick=null;
       h.querySelectorAll("[data-cs]").forEach(b=>b.onclick=()=>{ c[b.dataset.cs]=!c[b.dataset.cs]; draw(); });
-      $("#csOk").onclick=()=>{ S.consent=Object.assign({},c,{v:CONSENT_V,at:new Date().toISOString()}); save(); closeSheet(); if(!c.notif) scheduleNotifs(); next&&next(); };
+      $("#csOk").onclick=()=>{ S.consent=Object.assign({},c,{v:CONSENT_V,at:new Date().toISOString()}); save(); closeSheet(); scheduleNotifs(); next&&next(); };
     });
   draw();
 }
