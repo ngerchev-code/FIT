@@ -2232,7 +2232,7 @@ function rLive(){
       ${s.state==="paused"?`<button class="btn block live-main" id="lvResume" type="button">Продължи</button>`:
         act?`<button class="btn hot block live-main" id="lvEnd" type="button">Край на серията · запиши</button><button class="btn ghost block" id="lvCancelSet" type="button">Отмени серията</button>`:
         `<button class="btn block live-main" id="lvStart" type="button">${done.length>=e.targetSets?"Още една серия (по желание)":"Започни серия "+(done.length+1)}</button>`}
-      ${done.length?`<div>${done.map((x,i)=>`<button class="set-row" type="button" data-ed="${x.id}"><span>Серия ${i+1}</span><b class="mono">${cardio?x.reps+" мин":x.weightKg+" kg × "+x.reps}${x.hrAvg?" · ♥"+x.hrAvg:""}</b><span class="muted">${x.edited?"поправено":x.source==="manual"?"ръчно":"от часовника"} ✎</span></button>`).join("")}</div>`:""}
+      ${done.length?`<div>${done.map((x,i)=>`<button class="set-row" type="button" data-ed="${x.id}"><span>Серия ${i+1}</span><b class="mono">${cardio?x.reps+" мин":x.weightKg+" kg × "+x.reps}${x.hrAvg?" · ♥"+x.hrAvg:""}</b><span class="muted">${x.edited?"поправено":x.source==="manual"?"ръчно":x.source==="notification"?"от известие":"от часовника"} ✎</span></button>`).join("")}</div>`:""}
     </div>
     <div class="grid2"><button class="btn ghost" id="lvAdd" type="button" ${act?"disabled":""}>Смени / добави уред</button>
       ${s.state==="active"?`<button class="btn ghost" id="lvPause" type="button" ${act?"disabled":""}>Пауза</button>`:`<span></span>`}</div>
@@ -2629,7 +2629,7 @@ function rFood(){
 /* ============ ЧАСОВНИК (Wear OS — Galaxy Watch) ============ */
 const WATCH_APK = "https://github.com/ngerchev-code/FIT/releases/latest/download/FIT-watch.apk";
 const WB = () => Plug("WearBridge");
-let watchAcks = [], watchPushT = null;
+let watchAcks = [], watchPushT = null, watchRestT = null;
 function watchState(){
   const p=P(); const s=p?liveSession():null;
   if(!s){ const last=p&&p.wk&&p.wk.sessions.filter(x=>x.state==="completed").slice(-1)[0];
@@ -2647,7 +2647,9 @@ function watchState(){
 function pushWatch(){
   if(!NATIVE||!WB()) return;
   clearTimeout(watchPushT);
-  watchPushT=setTimeout(()=>{ try{ WB().sendState({json:JSON.stringify(watchState())}); }catch(e){} },120);
+  watchPushT=setTimeout(()=>{ try{ const st=watchState(), js=JSON.stringify(st); WB().sendState({json:js});
+    if(st.active && allowed2("notif")) WB().showWorkout({json:js}); else WB().clearWorkout();
+    clearTimeout(watchRestT); if(st.restUntil) watchRestT=setTimeout(pushWatch, Math.max(500, st.restUntil-Date.now()+500)); }catch(e){} },120);
 }
 function ackWatch(id){ if(id&&!watchAcks.includes(id)){ watchAcks.push(id); if(watchAcks.length>300) watchAcks=watchAcks.slice(-200); } }
 function onWatchAction(json){

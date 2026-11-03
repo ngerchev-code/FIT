@@ -89,6 +89,18 @@ public class WearBridgePlugin extends Plugin implements MessageClient.OnMessageR
     }
 
     @PluginMethod
+    public void showWorkout(PluginCall call) {
+        WorkoutNotifier.show(getContext(), call.getString("json", "{}"));
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void clearWorkout(PluginCall call) {
+        WorkoutNotifier.clear(getContext());
+        call.resolve();
+    }
+
+    @PluginMethod
     public void status(PluginCall call) {
         Wearable.getNodeClient(getContext()).getConnectedNodes()
             .addOnSuccessListener((List<Node> nodes) -> {

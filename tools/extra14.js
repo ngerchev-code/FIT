@@ -1,7 +1,7 @@
 /* ============ ЧАСОВНИК (Wear OS — Galaxy Watch) ============ */
 const WATCH_APK = "https://github.com/ngerchev-code/FIT/releases/latest/download/FIT-watch.apk";
 const WB = () => Plug("WearBridge");
-let watchAcks = [], watchPushT = null;
+let watchAcks = [], watchPushT = null, watchRestT = null;
 function watchState(){
   const p=P(); const s=p?liveSession():null;
   if(!s){ const last=p&&p.wk&&p.wk.sessions.filter(x=>x.state==="completed").slice(-1)[0];
@@ -19,7 +19,9 @@ function watchState(){
 function pushWatch(){
   if(!NATIVE||!WB()) return;
   clearTimeout(watchPushT);
-  watchPushT=setTimeout(()=>{ try{ WB().sendState({json:JSON.stringify(watchState())}); }catch(e){} },120);
+  watchPushT=setTimeout(()=>{ try{ const st=watchState(), js=JSON.stringify(st); WB().sendState({json:js});
+    if(st.active && allowed2("notif")) WB().showWorkout({json:js}); else WB().clearWorkout();
+    clearTimeout(watchRestT); if(st.restUntil) watchRestT=setTimeout(pushWatch, Math.max(500, st.restUntil-Date.now()+500)); }catch(e){} },120);
 }
 function ackWatch(id){ if(id&&!watchAcks.includes(id)){ watchAcks.push(id); if(watchAcks.length>300) watchAcks=watchAcks.slice(-200); } }
 function onWatchAction(json){
