@@ -22,7 +22,16 @@ AQ = {"current":{"pm10":15,"pm2_5":8,"european_aqi":30}}
 OVERPASS = {"elements":[{"type":"way","center":{"lat":42.67,"lon":23.31},"tags":{"name":"Южен парк","leisure":"park"}},
  {"type":"node","lat":42.56,"lon":23.29,"tags":{"name":"Черни връх","natural":"peak","ele":"2290"}},
  {"type":"way","center":{"lat":42.64,"lon":23.43},"tags":{"name":"Панчарево","natural":"water","water":"reservoir"}},
- {"type":"node","lat":42.6,"lon":23.3,"tags":{"name":"Хижа Алеко","tourism":"alpine_hut"}}]}
+ {"type":"node","lat":42.6,"lon":23.3,"tags":{"name":"Хижа Алеко","tourism":"alpine_hut"}},
+ {"type":"node","lat":42.699,"lon":23.325,"tags":{"name":"Pulse Fitness","leisure":"fitness_centre","opening_hours":"Mo-Su 07:00-23:00"}},
+ {"type":"node","lat":42.694,"lon":23.318,"tags":{"leisure":"fitness_station"}},
+ {"type":"way","center":{"lat":42.688,"lon":23.336},"tags":{"name":"Национален стадион „Васил Левски“","leisure":"stadium"}},
+ {"type":"node","lat":42.697,"lon":23.33,"tags":{"amenity":"pharmacy","name":"Аптека Субра"}},
+ {"type":"way","center":{"lat":42.693,"lon":23.31},"tags":{"amenity":"hospital","name":"УМБАЛ „Александровска“"}},
+ {"type":"way","center":{"lat":42.6958,"lon":23.3328},"tags":{"name":"Храм-паметник „Св. Александър Невски“","tourism":"attraction"}},
+ {"type":"node","lat":42.7,"lon":23.31,"tags":{"name":"Decathlon","shop":"sports"}},
+ {"type":"node","lat":42.696,"lon":23.322,"tags":{"amenity":"drinking_water"}},
+ {"type":"way","center":{"lat":42.686,"lon":23.322},"tags":{"name":"Басейн Спартак","leisure":"swimming_pool"}}]}
 
 async def run(native):
     errs, logs = [], []
@@ -36,7 +45,7 @@ async def run(native):
             u = r.request.url
             if "api.open-meteo.com" in u: return await r.fulfill(json=WX)
             if "air-quality-api" in u: return await r.fulfill(json=AQ)
-            if "overpass-api" in u: return await r.fulfill(json=OVERPASS)
+            if "overpass" in u: return await r.fulfill(json=OVERPASS)
             if "api.github.com" in u: return await r.fulfill(json={"tag_name":"v1.0.12","body":"### Какво ново\n- Тест\n\nminNative: 11","assets":[{"name":"web.zip","browser_download_url":"https://x/web.zip"}]})
             if "nominatim" in u: return await r.fulfill(json=[{"lat":"42.69","lon":"23.32"}])
             if u.startswith("file://"): return await r.continue_()
@@ -88,6 +97,25 @@ async def run(native):
         await step("nat next", 'showNatSheet(natCandidates()); document.querySelector("#natNext").click()')
         await step("venues filter", 'worldSeg="food"; show("world"); document.querySelectorAll("[data-vf]")[1].click()')
         await step("after workout venue", 'afterWorkoutVenue()'); await page.wait_for_timeout(2600)
+        await step("live: start from today", 'show("today"); const g=document.querySelector("#liveGo"); if(g){ g.click(); } else { document.querySelector("#quickGo").click(); document.querySelector("#qGo").click(); } document.querySelector("#rcSkip").click()')
+        for i in range(3):
+            await step(f"live: set {i+1}", 'document.querySelector("#lvStart").click(); document.querySelector("[data-kg=\'2.5\']") && document.querySelector("[data-kg=\'2.5\']").click(); document.querySelector("#lvEnd").click(); document.querySelector("#lvSkipRest") && document.querySelector("#lvSkipRest").click()')
+        await step("live: switch machine", 'document.querySelectorAll("[data-lx]")[1].click()')
+        await step("live: add machine sheet", 'document.querySelector("#lvAdd").click(); document.querySelector("#amNew").click(); document.querySelector("#nmN").value="Хак клек"; document.querySelector("#nmOk").click()')
+        await step("live: set on new machine", 'document.querySelector("#lvStart").click(); document.querySelector("#lvEnd").click()')
+        await step("live: edit set", 'document.querySelector("[data-ed]").click(); document.querySelector("#esR").value="11"; document.querySelector("#esOk").click()')
+        await step("live: pause/resume", 'document.querySelector("#lvSkipRest") && document.querySelector("#lvSkipRest").click(); document.querySelector("#lvPause").click(); document.querySelector("#lvResume").click()')
+        live = await page.evaluate('(()=>{const s=liveSession(); return s?FITCore.summary(s).sets+" серии, "+s.exercises.length+" уреда, state "+s.state:"няма"})()')
+        steps.append("ok   ↳ live: "+live)
+        await step("live: finish", 'document.querySelector("#lvFinish").click()')
+        done = await page.evaluate('(()=>{const p=P(); return (p.log[todayISO()]||{}).complete+" | сесии "+p.wk.sessions.length+" | активна "+p.wk.activeId})()')
+        steps.append("ok   ↳ след край: "+done)
+        await step("quick sheet", 'show("live"); document.querySelector("#lvQuick").click(); document.querySelector("[data-mn=\'20\']").click()')
+        await step("recovery light", 'closeSheet(); recoverySheet(l=>window.__load=l); document.querySelector("[data-en=\'2\']").click(); document.querySelector("#rcGo").click(); document.querySelector("#rcLight").click()')
+        await step("missed: reschedule", 'const p=P(); p.start="2026-01-01"; missedSheet("2026-11-02"); document.querySelector("#msRe").click(); document.querySelector("[data-rs=work]").click(); document.querySelector("#msWhen").value="2026-11-04T18:00"; document.querySelector("#msWhen").dispatchEvent(new Event("change")); document.querySelector("#msOk").click()')
+        ms = await page.evaluate('JSON.stringify({skip:P().log["2026-11-02"].skip.reason, res:P().resched})')
+        steps.append("ok   ↳ missed: "+ms)
+        await step("missed: injury no gym", 'missedSheet("2026-10-30"); document.querySelector("#msSkip").click(); document.querySelector("[data-rs=injury]").click(); if(document.querySelector("[data-alt=gym]")) throw new Error("gym offered for injury")')
         await step("finish workout", 'show("today"); const f=document.querySelector("#finishBtn"); f&&f.click()')
         await step("check exercise", 'show("today"); const c=document.querySelector("[data-done]"); c&&c.click()')
         await step("events add", 'worldSeg="events"; show("world"); document.querySelector("#ev-name").value="Поход Мусала"; document.querySelector("#ev-date").value="2026-12-01"; document.querySelector("#ev-add").click()')
@@ -125,7 +153,7 @@ async def main():
         steps, errs, logs, ov, calls = await run(native)
         print("=== режим", "ANDROID" if native else "УЕБ", "===")
         print("\n".join(s for s in steps if not s.startswith("ok")) or "всички стъпки ok ("+str(len(steps))+")")
-        print("\n".join(s for s in steps if "↳" in s))
+        print("\n".join(s for s in steps if "↳" in s and ("live" in s or "missed" in s or "след" in s)))
         print("грешки на страницата:", errs or "няма")
         print("console errors:", [l for l in logs if "ERR_FAILED" not in l and "net::" not in l][:10] or "няма")
         print("хоризонтален скрол:", ov)

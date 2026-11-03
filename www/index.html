@@ -3,10 +3,40 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FIT">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0C0F14">
+
 <meta name="theme-color" content="#2340E8">
 <link rel="icon" href="icon.png">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0}img{max-width:100%}[hidden]{display:none!important}.gwrap{position:relative}.gwrap .gfs{position:absolute;top:10px;right:10px;z-index:1000;background:#fff;color:#10141B;border:0;border-radius:12px;padding:8px 12px;font-weight:800;font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
 .gwrap.full{position:fixed;inset:0;z-index:9999;background:#000}.gwrap.full #gmap{height:100vh!important;border-radius:0!important;border:0!important}
+.live-clock{font-size:34px;font-weight:800;letter-spacing:-.02em}
+.live-state{color:#fff;font-weight:900;font-size:13px;letter-spacing:.08em;padding:8px 14px;border-radius:999px}
+.live-card{gap:14px}
+.live-main{min-height:64px;font-size:18px;border-radius:16px}
+.stepper{display:grid;grid-template-columns:64px 1fr 64px;align-items:center;gap:8px}
+.stepper span{grid-column:1/-1;font-weight:800;color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+body.on-live #chatFab{display:none}
+.stepper button{height:58px;border-radius:14px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:28px;font-weight:800}
+.stepper b{font-size:24px;text-align:center}
+.rest-ring{display:grid;place-items:center;align-self:center;width:170px;height:170px;border-radius:50%;border:10px solid var(--go);margin:4px auto}
+.rest-ring div{font-size:40px;font-weight:800}.rest-ring span{margin-top:-34px;color:var(--muted);font-weight:700}
+.set-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;width:100%;text-align:left;padding:12px 0;border:0;border-top:1px solid var(--line);background:none;color:inherit;font:inherit}
+.set-row b{text-align:right}
+.gd-head{display:flex;flex-direction:column;gap:2px}.gd-city{font-family:var(--f-display,inherit);font-weight:800;font-size:20px}
+.gd-cat{border-left:4px solid var(--c)!important}
+.gd-badge{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:19px;box-shadow:0 2px 6px rgba(0,0,0,.18)}
+.gd-item{grid-template-columns:auto minmax(0,1fr) auto;align-items:center}
+.gpin{width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--c);border:3px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.35);display:grid;place-items:center}
+.gpin span{transform:rotate(45deg);font-size:16px;line-height:1}
+.gme{width:22px;height:22px;border-radius:50%;background:#2340E8;border:3px solid #fff;box-shadow:0 0 0 0 rgba(35,64,232,.5);animation:gme 1.8s infinite}
+@keyframes gme{0%{box-shadow:0 0 0 0 rgba(35,64,232,.55)}70%{box-shadow:0 0 0 18px rgba(35,64,232,0)}100%{box-shadow:0 0 0 0 rgba(35,64,232,0)}}
+.gwrap .gsat{top:auto;bottom:28px;right:10px}
 </style>
 <title>FIT</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -236,6 +266,7 @@ input.in,select.in,textarea.in{border:1px solid var(--line);background:var(--sur
   <!-- СВЯТ -->
   <section class="view" id="v-world" hidden></section>
   <section class="view" id="v-guide" hidden></section>
+  <section class="view" id="v-live" hidden></section>
 </main>
 
 <nav class="tabs" aria-label="Основно меню"><div class="tabs-in">
@@ -250,8 +281,10 @@ input.in,select.in,textarea.in{border:1px solid var(--line);background:var(--sur
 <button class="chat-fab" id="chatFab" type="button" aria-label="Попитай FIT"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"/></svg></button>
 <div id="sheetHost"></div>
 
+<script src="fit-core.js"></script>
 <script>
 const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const IOS = !!(window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform()==="ios");
 const Plug = n => (window.Capacitor && window.Capacitor.Plugins) ? window.Capacitor.Plugins[n] : null;
 /* ============ ДАННИ ============ */
 const GOALS = {
@@ -491,16 +524,16 @@ function suppHTML(p){
 /* ============ ИЗГЛЕДИ ============ */
 let TAB="today";
 function show(tab){
-  TAB=tab;
+  TAB=tab; document.body.classList.toggle("on-live",tab==="live");
   document.querySelectorAll(".tab").forEach(b=>{ if(b.dataset.tab===tab) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
-  ["today","scan","plan","mama","world","guide"].forEach(v=>$("#v-"+v).hidden = v!==tab);
+  ["today","scan","plan","mama","world","guide","live"].forEach(v=>$("#v-"+v).hidden = v!==tab);
   render(); window.scrollTo(0,0);
 }
 function render(){
   const p=P(); if(!p) return;
   $("#whoAva").textContent = p.name.slice(0,1).toUpperCase();
   $("#whoName").textContent = p.name;
-  ({today:rToday, scan:rScan, plan:rPlan, mama:rMama, world:rWorld, guide:rGuide})[TAB]();
+  ({today:rToday, scan:rScan, plan:rPlan, mama:rMama, world:rWorld, guide:rGuide, live:rLive})[TAB]();
 }
 
 function workoutList(p, day, interactive){
@@ -518,7 +551,7 @@ function workoutList(p, day, interactive){
 }
 
 function rToday(){
-  const p=P(), L=lvl(p), w=weekNo(p), dow=new Date().getDay(), di=dayIndexFor(p,dow);
+  const p=P(), L=lvl(p), w=weekNo(p), dow=new Date().getDay(); let di=dayIndexFor(p,dow); { const rs=(typeof reschedToday==="function")&&reschedToday(); if(di<0&&rs) di=dayIndexFor(p,new Date(rs.from+"T12:00:00").getDay()); }
   const val=VALUES[p.value]; const act = val.acts[new Date().getDate()%val.acts.length];
   const t=todayISO(); const doneCount=(p.log[t]?.done||[]).length;
   let workout;
@@ -528,13 +561,13 @@ function rToday(){
       <div class="row" style="justify-content:space-between"><div><p class="eyebrow">Днешна тренировка · ${SPLIT_N[day.split]}</p><h2 class="h2">${day.list.length} уреда · ~${p.minutes} мин</h2></div>
       <span class="pill accent">${MODES[modeOf(p)].n}</span></div>
       <div>${workoutList(p,day,true)}</div>
-      ${p.log[t]?.complete?`<span class="pill good">Завършена днес</span>`:`<button class="btn hot block" id="finishBtn" type="button">Завърших тренировката</button>`}
+      <div id="reschedNote"></div>${p.log[t]?.complete?`<span class="pill good">Завършена днес</span>`:`<div id="liveHost" style="display:flex;flex-direction:column;gap:8px"></div><button class="btn ghost block" id="finishBtn" type="button">Завърших я без запис на серии</button>`}
     </div>`;
   } else {
     const next = trainingDays(p).find(d=>d>dow) ?? trainingDays(p)[0];
     workout = `<div class="card"><p class="eyebrow">Днес е ден за възстановяване</p><h2 class="h2">Следваща тренировка: ${DAYN[next]}</h2>
       <p class="muted">Активна почивка: 20–30 мин разходка, 10 мин разтягане на бедра, гърди и рамене. Мускулите растат в почивката.</p>
-      <button class="btn ghost" data-go="plan" type="button">Виж седмицата</button></div>`;
+      <button class="btn ghost" data-go="plan" type="button">Виж седмицата</button><div id="restHost"></div></div>`;
   }
   $("#v-today").innerHTML = `
     <div class="hero">
@@ -565,7 +598,7 @@ function rToday(){
     <div class="card"><p class="eyebrow">Витамини и минерали днес</p>${suppHTML(p)}</div>
     <button class="btn block" data-go="scan" type="button">Снимай уред в залата</button>
     ${NATIVE?"":`<div class="card"><p class="eyebrow">Сложи FIT на телефона</p>
-      <div class="row" style="flex-wrap:nowrap;align-items:flex-start"><img src="${ICON}" alt="Иконата на FIT" width="64" height="64" style="border-radius:14px;flex:0 0 auto"><p style="margin:0">Свали иконата, после в Chrome отвори менюто ⋮ и избери „Добавяне към началния екран“.</p></div>
+      <div class="row" style="flex-wrap:nowrap;align-items:flex-start"><img src="${ICON}" alt="Иконата на FIT" width="64" height="64" style="border-radius:14px;flex:0 0 auto"><p style="margin:0">${/iPhone|iPad|iPod/.test(navigator.userAgent)?"iPhone: отвори FIT в Safari, натисни „Сподели“ ⬆️ и избери „Добави към началния екран“.":"Android: свали FIT.apk от менюто или в Chrome отвори ⋮ и избери „Добавяне към началния екран“."}</p></div>
       ${DL?`<button class="btn ghost" id="dlIcon" type="button">Свали иконата</button>`:`<p class="note">Задръж пръст върху иконата и избери „Изтегляне на изображението“.</p>`}</div>`}`;
   const dl=$("#dlIcon"); if(dl) dl.onclick=async()=>{ try{ const b=await (await fetch(ICON)).blob(); await DL.save({filename:"fit-icon.png",data:b}); }catch(e){ toast("Иконата","Задръж пръст върху иконата, за да я запазиш."); } };
   wireCoach();
@@ -1855,6 +1888,7 @@ async function checkUpdates(manual){
       applyWhenIdle(up,id,rel); return;
     }catch(e){ /* при грешка — предложение за APK по-долу */ }
   }
+  if(IOS){ if(manual) toast("Обновления","Новата версия на iPhone идва чрез App Store / TestFlight."); return; }
   if(!manual && st.askedApk && Date.now()-st.askedApk<864e5) return;
   st.askedApk=Date.now(); save();
   sheet(`<div class="grab"></div><p class="eyebrow">Нова версия 1.0.${rel}</p><div class="h-display">Голямо обновление на FIT</div>
@@ -1865,87 +1899,141 @@ async function checkUpdates(manual){
 
 /* ============ GUIDE — КАРТА: КАКВО ИМА НАОКОЛО (GPS) ============ */
 const GUIDE_CAT = {
-  gym:{n:"Фитнеси",c:"#2340E8"}, pilates:{n:"Пилатес и йога",c:"#9B3FD1"}, pool:{n:"Басейни",c:"#0B8FC4"},
-  food:{n:"Здравословни заведения",c:"#17905F"}, shop:{n:"Спортни магазини",c:"#F2532E"},
-  park:{n:"Паркове и игрища",c:"#5A8F1E"}, nature:{n:"Природа",c:"#7A5A2E"}, mine:{n:"Мои обекти",c:"#10141B"}
+  gym:{n:"Фитнеси и зали",c:"#2340E8",i:"🏋️"}, pilates:{n:"Пилатес и йога",c:"#9B3FD1",i:"🧘"}, pool:{n:"Басейни",c:"#0B8FC4",i:"🏊"},
+  street:{n:"Фитнес на открито",c:"#E0661B",i:"💪"}, stadium:{n:"Стадиони и писти",c:"#B8860B",i:"🏟️"}, park:{n:"Паркове",c:"#3E8E1E",i:"🌳"},
+  food:{n:"Здравословно хранене",c:"#17905F",i:"🥗"}, shop:{n:"Спортни магазини",c:"#F2532E",i:"🛍️"},
+  med:{n:"Болници и спешна помощ",c:"#D7263D",i:"🏥"}, pharm:{n:"Аптеки",c:"#0FA3A3",i:"💊"}, sight:{n:"Забележителности",c:"#6B4FA0",i:"🏛️"},
+  water:{n:"Питейна вода",c:"#2A7DE1",i:"🚰"}, nature:{n:"Природа",c:"#7A5A2E",i:"⛰️"}, mine:{n:"Мои обекти",c:"#10141B",i:"⭐"}
 };
-let GUIDE=null, GUIDEbusy=false, GUIDEerr="", guideMap=null, guideF="all", guideRadius=3;
+const GUIDE_GROUPS = {sport:["gym","pilates","pool","street","stadium"], city:["med","pharm","sight","water"], out:["park","nature"], life:["food","shop","mine"]};
+let GUIDE=null, GUIDEbusy=false, GUIDEerr="", guideMap=null, guideF="all", guideRadius=3, guideCity="gps", guideSat=false, guideMarks={};
+function guideCatOf(t){
+  if(/pilates|yoga/.test(t.sport||"")) return "pilates";
+  if(t.leisure==="fitness_station") return "street";
+  if(/^(fitness_centre|sports_centre|sports_hall)$/.test(t.leisure||"")) return "gym";
+  if(t.leisure==="swimming_pool"||t.leisure==="water_park") return "pool";
+  if(t.leisure==="stadium"||t.leisure==="track") return "stadium";
+  if(t.leisure==="park"||t.leisure==="garden") return "park";
+  if(/^(sports|outdoor|bicycle)$/.test(t.shop||"")) return "shop";
+  if(t.shop==="health_food"||/^(restaurant|cafe)$/.test(t.amenity||"")) return "food";
+  if(t.amenity==="hospital"||t.emergency==="ambulance_station") return "med";
+  if(t.amenity==="pharmacy") return "pharm";
+  if(t.tourism||t.historic) return "sight";
+  if(t.amenity==="drinking_water") return "water";
+  return null;
+}
+const GUIDE_DEF_NAME={pharm:"Аптека",water:"Чешма / питейна вода",street:"Уреди за фитнес на открито",med:"Спешна помощ"};
+async function cityName(me){
+  const k="fit_city_"+me.lat.toFixed(2)+"_"+me.lon.toFixed(2);
+  try{ const c=localStorage.getItem(k); if(c) return c; }catch(e){}
+  try{
+    const ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),8000);
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=bg&lat=${me.lat}&lon=${me.lon}`,{signal:ctl.signal}); clearTimeout(tm);
+    const j=await r.json(); const a=j.address||{}; const n=a.city||a.town||a.village||a.municipality||a.county||"";
+    if(n){ try{ localStorage.setItem(k,n); }catch(e){} } return n;
+  }catch(e){ return ""; }
+}
+async function guideCenter(){
+  if(guideCity!=="gps"){ const c=CITIES.find(x=>x[0]===guideCity); if(c) return {lat:c[1],lon:c[2],city:c[0],picked:true}; }
+  const me=await myPosition();
+  if(me) return Object.assign({},me);
+  return {lat:42.6977,lon:23.3219,approx:true,city:"София"};
+}
 async function loadGuide(force){
   if(GUIDEbusy) return; GUIDEbusy=true; GUIDEerr="";
   try{
-    let me=await myPosition();
-    if(!me){ me={lat:42.6977,lon:23.3219,approx:true}; }
-    const key="fit_guide_"+me.lat.toFixed(2)+"_"+me.lon.toFixed(2)+"_"+guideRadius;
-    if(!force){ try{ const c=JSON.parse(localStorage.getItem(key)||"null"); if(c&&Date.now()-c.at<6*3600e3){ GUIDE={me,list:c.list}; return; } }catch(e){} }
+    const me=await guideCenter();
+    const key="fit_guide2_"+me.lat.toFixed(2)+"_"+me.lon.toFixed(2)+"_"+guideRadius;
+    if(!force){ try{ const c=JSON.parse(localStorage.getItem(key)||"null"); if(c&&Date.now()-c.at<6*3600e3){ GUIDE={me:Object.assign(me,{city:me.city||c.city}),list:c.list}; return; } }catch(e){} }
     GUIDE={me,list:[],loading:true}; GUIDEbusy=false; if(TAB==="guide") rGuide(); GUIDEbusy=true;
-    const R=guideRadius*1000, a=`(around:${R},${me.lat},${me.lon})`;
-    const q=`[out:json][timeout:25];(
-      nwr["leisure"="fitness_centre"]["name"]${a};
-      nwr["sport"~"pilates|yoga"]["name"]${a};
-      nwr["leisure"="sports_centre"]["name"]${a};
-      nwr["leisure"="swimming_pool"]["access"!="private"]["name"]${a};
-      nwr["shop"="sports"]["name"]${a};
-      nwr["shop"="outdoor"]["name"]${a};
-      nwr["amenity"~"restaurant|cafe|fast_food"]["diet:vegan"~"yes|only"]["name"]${a};
-      nwr["amenity"~"restaurant|cafe|fast_food"]["diet:vegetarian"~"yes|only"]["name"]${a};
-      nwr["shop"="health_food"]["name"]${a};
-      nwr["leisure"="park"]["name"]${a};
-      nwr["leisure"="pitch"]["name"]${a};
-      nwr["leisure"="track"]["name"]${a};
-    );out center tags 300;`;
+    if(!me.city) cityName(me).then(n=>{ if(n&&GUIDE&&GUIDE.me===me){ me.city=n; if(TAB==="guide") guideHead(); } });
+    const R=guideRadius*1000, A=`(around:${R},${me.lat},${me.lon})`;
+    const q=`[out:json][timeout:25];
+(nwr["leisure"~"^(fitness_centre|sports_centre|sports_hall)$"]["name"]${A};)->.a; .a out center 60;
+(nwr["sport"~"pilates|yoga"]["name"]${A};)->.b; .b out center 30;
+(nwr["leisure"~"^(swimming_pool|water_park)$"]["access"!~"private|customers"]["name"]${A};)->.c; .c out center 30;
+(nwr["leisure"="fitness_station"]${A};)->.d; .d out center 40;
+(nwr["leisure"~"^(stadium|track)$"]["name"]${A};)->.e; .e out center 30;
+(nwr["leisure"~"^(park|garden)$"]["name"]["access"!="private"]${A};)->.f; .f out center 60;
+(nwr["shop"~"^(sports|outdoor|bicycle)$"]["name"]${A};)->.g; .g out center 40;
+(nwr["amenity"~"^(restaurant|cafe)$"]["diet:vegan"~"yes|only"]["name"]${A}; nwr["amenity"~"^(restaurant|cafe)$"]["diet:vegetarian"~"yes|only"]["name"]${A}; nwr["shop"="health_food"]["name"]${A};)->.h; .h out center 40;
+(nwr["amenity"="hospital"]["name"]${A}; nwr["emergency"="ambulance_station"]${A};)->.i; .i out center 25;
+(nwr["amenity"="pharmacy"]${A};)->.j; .j out center 40;
+(nwr["tourism"~"^(attraction|museum|viewpoint)$"]["name"]${A}; nwr["historic"~"^(monument|memorial|castle|fort|archaeological_site)$"]["name"]${A};)->.k; .k out center 40;
+(nwr["amenity"="drinking_water"]${A};)->.l; .l out center 30;`;
     let j=null;
     for(const host of ["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter","https://overpass.private.coffee/api/interpreter"]){
-      const ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),15000);
+      const ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),20000);
       try{ const r=await fetch(host,{method:"POST",signal:ctl.signal,body:"data="+encodeURIComponent(q),headers:{"content-type":"application/x-www-form-urlencoded"}}); if(r.ok){ j=await r.json(); clearTimeout(tm); break; } }catch(e){}
       clearTimeout(tm);
     }
     if(!j) throw new Error("overpass");
     const seen=new Set(); const list=[];
-    (j.elements||[]).forEach(e=>{ const t=e.tags||{}; const name=t["name:bg"]||t.name; const c=e.center||(e.lat?{lat:e.lat,lon:e.lon}:null); if(!name||!c) return;
-      const k=name+"|"+c.lat.toFixed(3); if(seen.has(k)) return; seen.add(k);
-      const cat= /pilates|yoga/.test(t.sport||"")?"pilates": t.leisure==="fitness_centre"||t.leisure==="sports_centre"?"gym": t.leisure==="swimming_pool"?"pool": (t.shop==="sports"||t.shop==="outdoor")?"shop": (t.shop==="health_food"||t.amenity)?"food":"park";
-      list.push({name,cat,lat:c.lat,lon:c.lon,km:kmBetween(me,{lat:c.lat,lon:c.lon}),addr:[t["addr:street"],t["addr:housenumber"]].filter(Boolean).join(" "),hours:t.opening_hours||""});
+    (j.elements||[]).forEach(e=>{ const t=e.tags||{}; const cat=guideCatOf(t); const c=e.center||(e.lat?{lat:e.lat,lon:e.lon}:null); if(!cat||!c) return;
+      const name=t["name:bg"]||t.name||GUIDE_DEF_NAME[cat]; if(!name) return;
+      const k=cat+"|"+name+"|"+c.lat.toFixed(3)+c.lon.toFixed(3); if(seen.has(k)) return; seen.add(k);
+      const sub = cat==="sight"?({museum:"Музей",viewpoint:"Гледка",attraction:"Забележителност"}[t.tourism]||"Паметник"):cat==="stadium"&&t.leisure==="track"?"Писта":cat==="gym"&&t.leisure!=="fitness_centre"?"Спортна зала":cat==="med"&&t.emergency?"Спешна помощ":"";
+      list.push({name,cat,sub,lat:c.lat,lon:c.lon,km:kmBetween(me,{lat:c.lat,lon:c.lon}),addr:[t["addr:street"],t["addr:housenumber"]].filter(Boolean).join(" "),hours:t.opening_hours||"",phone:t.phone||t["contact:phone"]||"",web:t.website||t["contact:website"]||""});
     });
     list.sort((x,y)=>x.km-y.km);
-    try{ localStorage.setItem(key,JSON.stringify({at:Date.now(),list:list.slice(0,250)})); }catch(e){}
-    GUIDE={me,list:list.slice(0,250)};
+    try{ localStorage.setItem(key,JSON.stringify({at:Date.now(),city:me.city||"",list})); }catch(e){}
+    GUIDE={me,list};
   }catch(e){ if(GUIDE&&GUIDE.loading){ GUIDE.loading=false; GUIDE.failed=true; } else GUIDEerr="Не успях да заредя картата наоколо. Провери интернета и опитай пак."; }
   finally{ GUIDEbusy=false; if(TAB==="guide") rGuide(); }
 }
-function guideItems(){
+function guideAll(){
   if(!GUIDE) return [];
-  let L=GUIDE.list.slice();
-  if(NAT&&NAT.list) NAT.list.forEach(x=>L.push({name:x.name,cat:"nature",lat:x.lat,lon:x.lon,km:x.km,sub:NAT_T[x.type]}));
+  const L=GUIDE.list.slice();
+  if(NAT&&NAT.list) NAT.list.forEach(x=>L.push({name:x.name,cat:"nature",lat:x.lat,lon:x.lon,km:kmBetween(GUIDE.me,{lat:x.lat,lon:x.lon}),sub:NAT_T[x.type]}));
   myPlaces().forEach(o=>{ if(o.coords) L.push({name:o.name,cat:"mine",lat:o.coords.lat,lon:o.coords.lon,km:kmBetween(GUIDE.me,o.coords),sub:o.type}); });
-  if(guideF!=="all") L=L.filter(x=>x.cat===guideF);
+  return L;
+}
+function guideItems(){
+  let L=guideAll();
+  if(GUIDE_GROUPS[guideF]) L=L.filter(x=>GUIDE_GROUPS[guideF].includes(x.cat)); else if(guideF!=="all") L=L.filter(x=>x.cat===guideF);
   return L.sort((a,b)=>a.km-b.km);
+}
+function guideHead(){
+  const h=$("#gdHead"); if(!h||!GUIDE) return; const me=GUIDE.me;
+  h.innerHTML=`<span class="gd-city">📍 ${esc(me.city||"Определям града…")}</span><span class="muted">${me.picked?"избран град":me.approx?"GPS не е наличен — център на София":"по GPS"} · радиус ${guideRadius} км</span>`;
 }
 function rGuide(){
   const p=P(); if(!p) return;
   if(guideMap){ try{ guideMap.remove(); }catch(e){} guideMap=null; }
-  const items=guideItems(); const hasL=!!window.L;
+  const all=guideAll(), items=guideItems(); const hasL=!!window.L;
+  const cnt=k=>all.filter(x=>x.cat===k).length;
+  const grp=(k,n)=>{ const c=GUIDE_GROUPS[k].reduce((a,x)=>a+cnt(x),0); return `<button class="chip" type="button" data-gf="${k}" aria-pressed="${guideF===k}" style="flex:0 0 auto">${n}${GUIDE&&!GUIDE.loading?` <b class="mono" style="margin-left:4px">${c}</b>`:""}</button>`; };
   $("#v-guide").innerHTML=`
-    <div class="row" style="justify-content:space-between;align-items:flex-end"><div><p class="eyebrow">GUIDE · какво има наоколо</p><h1 class="h-display">Около теб</h1></div>
-    <div class="row" style="gap:6px"><button class="btn ghost sm" id="gdLocate" type="button">Моята позиция</button></div></div>
-    <div class="chips" style="flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px"><button class="chip" type="button" data-gf="all" aria-pressed="${guideF==="all"}" style="flex:0 0 auto">Всичко</button>${Object.entries(GUIDE_CAT).map(([k,v])=>`<button class="chip" type="button" data-gf="${k}" aria-pressed="${guideF===k}" style="flex:0 0 auto"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${v.c};margin-right:6px"></span>${v.n}</button>`).join("")}</div>
-    <div class="gwrap" id="gwrap"><button class="gfs" id="gdFull" type="button" aria-label="Карта на цял екран">⤢ Цял екран</button><div id="gmap" style="height:max(420px,calc(100vh - 230px));border-radius:16px;border:1px solid var(--line);overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${GUIDE&&hasL?"":`<div class="muted" style="padding:16px;text-align:center">${GUIDEbusy?'<div class="thinking"><span class="spin"></span>Търся какво има около теб…</div>':esc(GUIDEerr|| (hasL?"Зареждам картата…":"Картата работи в приложението FIT за Android."))}${GUIDEerr?'<div style="margin-top:8px"><button class="btn ghost sm" id="gdRetry" type="button">Опитай пак</button></div>':""}</div>`}</div>
+    <div class="row" style="justify-content:space-between;align-items:flex-end;gap:8px"><div style="min-width:0"><p class="eyebrow">GUIDE · какво има наоколо</p><h1 class="h-display" style="margin:0">Около теб</h1></div>
+      <button class="btn ghost sm" id="gdLocate" type="button">◎ Моята позиция</button></div>
+    <div class="gd-head" id="gdHead"></div>
+    <div class="row" style="gap:8px;flex-wrap:nowrap">
+      <select class="in" id="gdCity" aria-label="Град" style="min-height:40px;padding:6px 10px;flex:1 1 auto"><option value="gps" ${guideCity==="gps"?"selected":""}>📍 Където съм (GPS)</option>${CITIES.map(c=>`<option value="${esc(c[0])}" ${guideCity===c[0]?"selected":""}>${esc(c[0])}</option>`).join("")}</select>
+      <select class="in" id="gdRad" aria-label="Радиус" style="min-height:40px;padding:6px 10px;width:auto">${[1,3,5,10,15].map(r=>`<option value="${r}" ${r===guideRadius?"selected":""}>${r} км</option>`).join("")}</select></div>
+    <div class="chips" style="flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px"><button class="chip" type="button" data-gf="all" aria-pressed="${guideF==="all"}" style="flex:0 0 auto">Всичко${GUIDE&&!GUIDE.loading?` <b class="mono" style="margin-left:4px">${all.length}</b>`:""}</button>${grp("sport","Спорт")}${grp("city","Важно в града")}${grp("out","Навън")}${grp("life","Храна и магазини")}</div>
+    <div class="chips" style="flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px">${Object.entries(GUIDE_CAT).filter(([k])=>!GUIDE||GUIDE.loading||cnt(k)>0||guideF===k).map(([k,v])=>`<button class="chip gd-cat" type="button" data-gf="${k}" aria-pressed="${guideF===k}" style="flex:0 0 auto;--c:${v.c}"><span aria-hidden="true">${v.i}</span>${v.n}${GUIDE&&!GUIDE.loading?` <b class="mono" style="margin-left:4px">${cnt(k)}</b>`:""}</button>`).join("")}</div>
+    <div class="gwrap" id="gwrap"><button class="gfs" id="gdFull" type="button" aria-label="Карта на цял екран">⤢ Цял екран</button><button class="gfs gsat" id="gdSat" type="button">${guideSat?"🗺 Карта":"🛰 Сателит"}</button><div id="gmap" style="height:max(420px,calc(100vh - 300px));border-radius:16px;border:1px solid var(--line);overflow:hidden;background:var(--surface-2);display:grid;place-items:center">${GUIDE&&hasL?"":`<div class="muted" style="padding:16px;text-align:center">${GUIDEbusy&&!GUIDE?'<div class="thinking"><span class="spin"></span>Определям позицията…</div>':esc(GUIDEerr|| (hasL?"Зареждам картата…":"Картата не можа да се зареди. Провери интернета."))}${GUIDEerr?'<div style="margin-top:8px"><button class="btn ghost sm" id="gdRetry" type="button">Опитай пак</button></div>':""}</div>`}</div>
     </div>
-    <div class="row" style="justify-content:space-between"><span class="muted" style="font-size:13px">${GUIDE&&GUIDE.me&&GUIDE.me.approx?'<b style="color:var(--go)">Център на София</b> (GPS не е наличен) · ':''}${GUIDE?(GUIDE.loading?'<span class="thinking" style="display:inline-flex"><span class="spin"></span>Зареждам места наоколо…</span>':GUIDE.failed?'Сървърът за места не отговори. <button class="btn ghost sm" id="gdRetry2" type="button">Опитай пак</button>':items.length+" места в радиус "+guideRadius+" км"):""}</span>
-      <label class="row" style="gap:6px;font-size:13px;font-weight:700">Радиус<select class="in" id="gdRad" style="min-height:36px;padding:4px 8px;width:auto">${[1,3,5,10].map(r=>`<option value="${r}" ${r===guideRadius?"selected":""}>${r} км</option>`).join("")}</select></label></div>
-    <div>${items.slice(0,40).map((x,i)=>{ const d=distText(x.km); const c=GUIDE_CAT[x.cat]; return `<div class="ex"><div class="num" style="border-color:${c.c};color:${c.c}">${i+1}</div><div style="min-width:0"><div class="ex-name">${esc(x.name)}</div><div class="ex-meta">${esc(x.sub||c.n)} · ${d.km} км · пеша ${d.walk} · кола ${d.car}${x.hours?" · "+esc(x.hours):""}</div></div><button class="btn ghost sm" type="button" data-gnav="${i}">Как да стигна</button></div>`; }).join("")}</div>
-    <p class="note">Карта: © OpenStreetMap, © CARTO. Местата са от OpenStreetMap. Местоположението ти остава на телефона.</p>`;
+    <div class="row" style="justify-content:space-between"><span class="muted" style="font-size:13px">${GUIDE?(GUIDE.loading?'<span class="thinking" style="display:inline-flex"><span class="spin"></span>Зареждам обектите…</span>':GUIDE.failed?'Сървърът за места не отговори. <button class="btn ghost sm" id="gdRetry2" type="button">Опитай пак</button>':items.length+" обекта · подредени по разстояние"):""}</span></div>
+    <div>${items.slice(0,60).map((x,i)=>{ const d=distText(x.km); const c=GUIDE_CAT[x.cat]; return `<div class="ex gd-item"><div class="gd-badge" style="background:${c.c}" aria-hidden="true">${c.i}</div><div style="min-width:0"><div class="ex-name">${esc(x.name)}</div><div class="ex-meta"><b style="color:${c.c}">${esc(x.sub||c.n)}</b> · ${d.km} км · пеша ${d.walk} · кола ${d.car}</div>${x.addr||x.hours?`<div class="ex-meta">${esc([x.addr,x.hours].filter(Boolean).join(" · "))}</div>`:""}</div><div style="display:flex;flex-direction:column;gap:6px"><button class="btn sm" type="button" data-gnav="${i}">Как да стигна</button><button class="btn ghost sm" type="button" data-gshow="${i}">На картата</button></div></div>`; }).join("")}</div>
+    <p class="note">Карта: © Esri, © OpenStreetMap. Обектите са от OpenStreetMap и може да не са пълни — провери работното време преди да тръгнеш. Местоположението ти остава на телефона.</p>`;
+  guideHead();
   const v=$("#v-guide");
   v.querySelectorAll("[data-gf]").forEach(b=>b.onclick=()=>{ guideF=b.dataset.gf; rGuide(); });
   v.querySelectorAll("[data-gnav]").forEach(b=>b.onclick=()=>{ const x=items[+b.dataset.gnav]; navSheet(x.name,x.name,{lat:x.lat,lon:x.lon}); });
+  v.querySelectorAll("[data-gshow]").forEach(b=>b.onclick=()=>{ const x=items[+b.dataset.gshow]; const m=guideMarks[x.lat+","+x.lon]; if(guideMap&&m){ $("#gwrap").scrollIntoView({behavior:"smooth",block:"start"}); guideMap.flyTo([x.lat,x.lon],17,{duration:.6}); setTimeout(()=>m.openPopup(),650); } });
   { const fb=$("#gdFull"), w=$("#gwrap"); if(fb) fb.onclick=()=>{ const on=!w.classList.contains("full"); w.classList.toggle("full",on); fb.textContent=on?"✕ Затвори":"⤢ Цял екран"; setTimeout(()=>{ try{ guideMap&&guideMap.invalidateSize(); }catch(e){} },150); }; }
-  const rt=$("#gdRetry"); if(rt) rt.onclick=()=>{ MYPOS=null; loadGuide(true); rGuide(); };
+  $("#gdSat").onclick=()=>{ guideSat=!guideSat; rGuide(); };
+  const rt=$("#gdRetry"); if(rt) rt.onclick=()=>{ MYPOS=null; GUIDEerr=""; loadGuide(true); rGuide(); };
   const rt2=$("#gdRetry2"); if(rt2) rt2.onclick=()=>{ GUIDE=null; loadGuide(true); rGuide(); };
   $("#gdRad").onchange=e=>{ guideRadius=+e.target.value; GUIDE=null; loadGuide(); rGuide(); };
-  $("#gdLocate").onclick=()=>{ MYPOS=null; GUIDE=null; loadGuide(true); if(!NAT) loadNature(); rGuide(); };
+  $("#gdCity").onchange=e=>{ guideCity=e.target.value; GUIDE=null; loadGuide(); rGuide(); };
+  $("#gdLocate").onclick=()=>{ guideCity="gps"; MYPOS=null; GUIDE=null; loadGuide(true); if(!NAT) loadNature(); rGuide(); };
   if(!GUIDE){ if(!GUIDEbusy&&!GUIDEerr) loadGuide(); return; }
   if(!hasL) return;
-  guideMap=L.map("gmap",{zoomControl:true,attributionControl:true}).setView([GUIDE.me.lat,GUIDE.me.lon],guideRadius<=1?16:guideRadius<=3?14:guideRadius<=5?13:12);
-  (function(){ const SRC=[
+  const me=GUIDE.me; guideMarks={};
+  guideMap=L.map("gmap",{zoomControl:true,attributionControl:true});
+  (function(){ const SRC=guideSat?[["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"© Esri"}]]:[
     ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"© Esri, © OpenStreetMap"}],
     ["https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}],
     ["https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{maxZoom:17,subdomains:"abc",attribution:"© OpenStreetMap, © OpenTopoMap"}]];
@@ -1953,20 +2041,289 @@ function rGuide(){
     const put=()=>{ if(lay) m.removeLayer(lay); bad=0; lay=L.tileLayer(SRC[i][0],SRC[i][1]).addTo(m);
       lay.on("tileerror",()=>{ if(++bad>=4 && i<SRC.length-1){ i++; put(); } }); };
     put(); })();
-  L.circleMarker([GUIDE.me.lat,GUIDE.me.lon],{radius:9,color:"#fff",weight:3,fillColor:"#2340E8",fillOpacity:1}).addTo(guideMap).bindTooltip("Ти си тук");
-  L.circle([GUIDE.me.lat,GUIDE.me.lon],{radius:guideRadius*1000,color:"#2340E8",weight:1,fillOpacity:0.04}).addTo(guideMap);
-  items.forEach((x,i)=>{ const c=GUIDE_CAT[x.cat]; const d=distText(x.km);
-    const m=L.circleMarker([x.lat,x.lon],{radius:8,color:"#fff",weight:2,fillColor:c.c,fillOpacity:0.95}).addTo(guideMap);
-    const el=document.createElement("div"); el.style.minWidth="180px";
-    el.innerHTML=`<b>${esc(x.name)}</b><br><span style="font-size:12px">${esc(x.sub||c.n)} · ${d.km} км · пеша ${d.walk}</span><br>`;
-    const b1=document.createElement("button"); b1.className="btn sm"; b1.style.marginTop="6px"; b1.textContent="Как да стигна"; b1.onclick=()=>navSheet(x.name,x.name,{lat:x.lat,lon:x.lon});
-    el.appendChild(b1); m.bindPopup(el);
+  guideMap.fitBounds(L.latLng(me.lat,me.lon).toBounds(guideRadius*2000),{padding:[10,10]});
+  L.circle([me.lat,me.lon],{radius:guideRadius*1000,color:"#12A150",weight:2,dashArray:"6 6",fillColor:"#12A150",fillOpacity:0.05}).addTo(guideMap);
+  L.marker([me.lat,me.lon],{icon:L.divIcon({className:"",html:'<div class="gme"><i></i></div>',iconSize:[22,22],iconAnchor:[11,11]}),zIndexOffset:1000}).addTo(guideMap).bindTooltip(me.picked?("Център: "+me.city):"Ти си тук");
+  items.forEach(x=>{ const c=GUIDE_CAT[x.cat]; const d=distText(x.km);
+    const m=L.marker([x.lat,x.lon],{icon:L.divIcon({className:"",html:`<div class="gpin" style="--c:${c.c}"><span>${c.i}</span></div>`,iconSize:[34,42],iconAnchor:[17,40],popupAnchor:[0,-36]})}).addTo(guideMap);
+    const el=document.createElement("div"); el.style.minWidth="200px";
+    el.innerHTML=`<div style="font-size:11px;font-weight:800;color:${c.c};text-transform:uppercase;letter-spacing:.05em">${c.i} ${esc(x.sub||c.n)}</div><b style="font-size:15px">${esc(x.name)}</b><div style="font-size:12px;margin-top:2px">${d.km} км · пеша ${d.walk} · кола ${d.car}</div>${x.hours?`<div style="font-size:12px">🕒 ${esc(x.hours)}</div>`:""}${x.addr?`<div style="font-size:12px">${esc(x.addr)}</div>`:""}`;
+    const b1=document.createElement("button"); b1.className="btn sm"; b1.style.marginTop="8px"; b1.textContent="Как да стигна"; b1.onclick=()=>navSheet(x.name,x.name,{lat:x.lat,lon:x.lon});
+    el.appendChild(b1); m.bindPopup(el); guideMarks[x.lat+","+x.lon]=m;
   });
   setTimeout(()=>{ try{ guideMap.invalidateSize(); }catch(e){} },200);
 }
 
+/* ============ ТРЕНИРОВКА НА ЖИВО (fit-core.js) ============ */
+const FC = window.FITCore;
+function wk(){ const p=P(); p.wk=p.wk||{sessions:[], activeId:null}; return p.wk; }
+function liveSession(){ const w=wk(); return w.sessions.find(s=>s.id===w.activeId)||null; }
+function lastSettings(){ return FC.lastByMachine(wk().sessions); }
+function machineList(){
+  const p=P(); const ids=(p.gym&&p.gym.length)?p.gym:Object.keys(LIB);
+  const out=ids.map(id=>{ const e=LIB[id]||(p.custom||[]).find(c=>c.id===id); return e?{id, name:e.n, group:(e.ex&&e.ex[0]&&e.ex[0][2])||"", def:e.def||null}:null; }).filter(Boolean);
+  (p.custom||[]).forEach(c=>{ if(!out.some(x=>x.id===c.id)) out.push({id:c.id,name:c.n,group:(c.ex&&c.ex[0]&&c.ex[0][2])||c.group||"",def:c.def||null}); });
+  return out;
+}
+function parsePresc(s,r,group){
+  if(group==="cardio"){ const m=/(\d+)/.exec(s||""); return {sets:1, reps:m?+m[1]:15, rest:0}; }
+  const m=/(\d+)\s*×\s*(\d+)(?:[–-](\d+))?/.exec(s||""); const sets=m?+m[1]:3; const reps=m?(m[3]?Math.round((+m[2]+ +m[3])/2):+m[2]):10;
+  let rest=90; const mm=/(\d+)(?:[–-](\d+))?\s*(сек|мин)/.exec(r||""); if(mm){ const v=mm[2]?Math.round((+mm[1]+ +mm[2])/2):+mm[1]; rest=mm[3]==="мин"?v*60:v; }
+  return {sets,reps,rest};
+}
+function persistLive(s){
+  const w=wk(); const i=w.sessions.findIndex(x=>x.id===s.id); if(i>=0) w.sessions[i]=s; else w.sessions.push(s);
+  if(w.sessions.length>80) w.sessions=w.sessions.slice(-80);
+  if(s.state==="completed"||s.state==="cancelled"){ if(w.activeId===s.id) w.activeId=null; } else w.activeId=s.id;
+  save();
+}
+function liveDo(a){
+  const s=liveSession(); if(!s) return null;
+  a.opId=a.opId||FC.uuid(); a.at=a.at||new Date().toISOString();
+  try{ const n=FC.apply(s,a); persistLive(n); restNotify(n); return n; }
+  catch(e){ const M={set_active:"Първо завърши текущата серия.",invalid_values:"Провери килограмите и повторенията.",not_active:"Тренировката е на пауза."}; toast("Тренировка",M[e.code]||"Действието не е възможно сега."); return null; }
+}
+async function restNotify(s){
+  const LN=Plug("LocalNotifications"); if(!NATIVE||!LN) return;
+  try{
+    await LN.cancel({notifications:[{id:7700}]});
+    if(s.restUntil && Date.parse(s.restUntil)>Date.now()+3000 && s.state==="active")
+      await LN.schedule({notifications:[{id:7700,title:"Почивката свърши",body:"Следваща серия — ти определяш темпото.",channelId:"fit_drop",sound:"drop.wav",schedule:{at:new Date(s.restUntil),allowWhileIdle:true}}]});
+  }catch(e){}
+}
+function startLive(exercises, kind, load){
+  const last=lastSettings();
+  const ex=exercises.map(e=>Object.assign({}, e, { targetKg: e.targetKg || (last[e.machineId]?last[e.machineId].weightKg:0) }));
+  const s=FC.newSession({exercises: load<1?FC.applyLoad(ex,load):ex, kind, load, date:todayISO()});
+  persistLive(s); liveDo({type:"START_WORKOUT"}); show("live");
+}
+function planExercises(){
+  const p=P(), dow=new Date().getDay(); let di=dayIndexFor(p,dow);
+  const rs=reschedToday(); if(di<0 && rs) di=dayIndexFor(p,new Date(rs.from+"T12:00:00").getDay());
+  if(di<0) return [];
+  return buildDay(p,di).list.map(it=>{ const [s,r]=presc(p,it.ex[2]); const q=parsePresc(s,r,it.ex[2]);
+    return {machineId:it.eq, name:it.ex[0], machine:it.eqn, group:it.ex[2], cue:it.ex[3], restSec:q.rest, targetSets:q.sets, targetReps:q.reps, targetKg:0}; });
+}
+/* проверка за възстановяване преди старт */
+function recoverySheet(then){
+  let c={energy:3,sleep:"ok",pain:false,ill:false};
+  const draw=()=>sheet(`<div class="grab"></div><p class="eyebrow">Преди да започнем</p><div class="h2">Как се чувстваш днес?</div>
+    <p class="muted" style="margin:0">Отговорът е по желание. Помага да изберем честно натоварване.</p>
+    <div><b>Енергия</b><div class="chips">${[1,2,3,4,5].map(n=>`<button class="chip" type="button" data-en="${n}" aria-pressed="${c.energy===n}">${["","Изтощен","Уморен","Нормално","Добре","Отлично"][n]}</button>`).join("")}</div></div>
+    <div><b>Сън</b><div class="chips">${[["bad","Лош"],["ok","Нормален"],["good","Добър"]].map(([k,n])=>`<button class="chip" type="button" data-sl="${k}" aria-pressed="${c.sleep===k}">${n}</button>`).join("")}</div></div>
+    <div class="chips"><button class="chip" type="button" id="rcPain" aria-pressed="${c.pain}">Имам болка</button><button class="chip" type="button" id="rcIll" aria-pressed="${c.ill}">Болен съм</button></div>
+    <button class="btn block" id="rcGo" type="button">Продължи</button><button class="btn ghost block" id="rcSkip" type="button">Пропусни въпросите</button>`, h=>{
+      h.querySelectorAll("[data-en]").forEach(b=>b.onclick=()=>{ c.energy=+b.dataset.en; draw(); });
+      h.querySelectorAll("[data-sl]").forEach(b=>b.onclick=()=>{ c.sleep=b.dataset.sl; draw(); });
+      $("#rcPain").onclick=()=>{ c.pain=!c.pain; draw(); }; $("#rcIll").onclick=()=>{ c.ill=!c.ill; draw(); };
+      $("#rcSkip").onclick=()=>{ closeSheet(); then(1); };
+      $("#rcGo").onclick=()=>{ const r=FC.recovery(c); const p=P(); p.recovery=p.recovery||{}; p.recovery[todayISO()]=Object.assign({},c,{action:r.action,source:"self-report",at:new Date().toISOString()}); save();
+        if(r.action==="normal"){ closeSheet(); return then(1); }
+        sheet(`<div class="grab"></div><p class="eyebrow">${r.action==="rest"?"Почивка":"По-лек ден"}</p><div class="h2">${r.action==="rest"?"Днес почиваме":"Тренираме по-леко"}</div><p style="margin:0">${esc(r.message)}</p>
+          ${r.action==="rest"?`<button class="btn block" id="rcRest" type="button">Добре, почивам</button><button class="btn ghost block" id="rcMob" type="button">Само 10 мин разтягане</button>`:`<button class="btn block" id="rcLight" type="button">Започни по-леко</button>`}
+          <button class="btn ghost block" data-close type="button">Назад</button>`, h2=>{
+            h2.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeSheet);
+            const rr=$("#rcRest"); if(rr) rr.onclick=()=>{ const p=P(), t=todayISO(); p.log[t]=p.log[t]||{}; p.log[t].rest={reason:c.pain?"pain":c.ill?"illness":"fatigue",at:new Date().toISOString()}; save(); closeSheet(); toast("Почивка","Почивката също е напредък."); rToday(); };
+            const rm=$("#rcMob"); if(rm) rm.onclick=()=>{ closeSheet(); startLive([{machineId:"mobility",name:"Разтягане и мобилност",group:"mobility",restSec:0,targetSets:1,targetReps:10,targetKg:0}],"mobility",1); };
+            const rl=$("#rcLight"); if(rl) rl.onclick=()=>{ closeSheet(); then(r.load); };
+          }); };
+    });
+  draw();
+}
+function quickSheet(){
+  const ms=machineList(); let mins=20, pick=new Set(ms.slice(0,2).map(m=>m.id));
+  const draw=()=>{ const last=lastSettings(); const plan=FC.planQuick({minutes:mins, machines:ms.filter(m=>pick.has(m.id)).map(m=>({id:m.id,name:m.name,group:m.group,weightKg:last[m.id]?last[m.id].weightKg:(m.def&&m.def.kg)||0,reps:(m.def&&m.def.reps)||10,restSec:(m.def&&m.def.rest)||90}))});
+    sheet(`<div class="grab"></div><p class="eyebrow">Бърза тренировка</p><div class="h2">Колко време имаш?</div>
+      <div class="chips">${[15,20,30,45,60].map(n=>`<button class="chip" type="button" data-mn="${n}" aria-pressed="${mins===n}">${n} мин</button>`).join("")}</div>
+      <b>Свободни уреди</b><div class="chips">${ms.map(m=>`<button class="chip" type="button" data-qm="${esc(m.id)}" aria-pressed="${pick.has(m.id)}">${esc(m.name)}</button>`).join("")}</div>
+      <div class="card" style="background:var(--surface-2)"><b>${esc(plan.note)}</b>${plan.exercises.map(e=>`<div class="ex-meta">${esc(e.name)} · ${e.targetSets} × ${e.targetReps}${e.targetKg?" · "+e.targetKg+" kg":""}</div>`).join("")}</div>
+      <button class="btn hot block" id="qGo" type="button" ${plan.exercises.length?"":"disabled"}>Започни</button><button class="btn ghost block" data-close type="button">Затвори</button>`, h=>{
+        h.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeSheet);
+        h.querySelectorAll("[data-mn]").forEach(b=>b.onclick=()=>{ mins=+b.dataset.mn; draw(); });
+        h.querySelectorAll("[data-qm]").forEach(b=>b.onclick=()=>{ const id=b.dataset.qm; if(pick.has(id)) pick.delete(id); else pick.add(id); draw(); });
+        $("#qGo").onclick=()=>{ closeSheet(); recoverySheet(load=>startLive(plan.exercises.map(e=>Object.assign({},e)),"quick",load)); };
+      }); };
+  draw();
+}
+function addExerciseSheet(){
+  const ms=machineList(); let mode="list";
+  const draw=()=>sheet(`<div class="grab"></div><p class="eyebrow">Смени или добави уред</p><div class="h2">${mode==="list"?"Избери уред":"Нов уред"}</div>
+    ${mode==="list"?`<div class="chips">${ms.map(m=>`<button class="chip" type="button" data-am="${esc(m.id)}">${esc(m.name)}</button>`).join("")}</div>
+      <button class="btn ghost block" id="amNew" type="button">+ Мой уред (име, мускули, тежест, повторения, почивка)</button>`:
+      `<label>Име<input class="in" id="nmN" placeholder="напр. Хак клек"></label>
+       <label>Мускулна група<select class="in" id="nmG">${Object.entries(GROUP_N).map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join("")}</select></label>
+       <div class="grid2"><label>Тежест (kg)<input class="in" id="nmK" type="number" inputmode="decimal" value="20"></label><label>Повторения<input class="in" id="nmR" type="number" inputmode="numeric" value="10"></label>
+       <label>Серии<input class="in" id="nmS" type="number" inputmode="numeric" value="3"></label><label>Почивка (сек)<input class="in" id="nmP" type="number" inputmode="numeric" value="90"></label></div>
+       <button class="btn block" id="nmOk" type="button">Запази и добави</button>`}
+    <button class="btn ghost block" data-close type="button">Затвори</button>`, h=>{
+      h.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeSheet);
+      const nw=$("#amNew"); if(nw) nw.onclick=()=>{ mode="new"; draw(); };
+      h.querySelectorAll("[data-am]").forEach(b=>b.onclick=()=>{ const m=ms.find(x=>x.id===b.dataset.am); const last=lastSettings()[m.id];
+        addToLive({machineId:m.id,name:m.name,machine:m.name,group:m.group,restSec:(m.def&&m.def.rest)||90,targetSets:(m.def&&m.def.sets)||3,targetReps:(m.def&&m.def.reps)||10,targetKg:last?last.weightKg:((m.def&&m.def.kg)||0)}); });
+      const ok=$("#nmOk"); if(ok) ok.onclick=()=>{ const n=$("#nmN").value.trim(); if(!n) return toast("Нов уред","Напиши име на уреда.");
+        const g=$("#nmG").value, def={kg:Math.max(0,+$("#nmK").value||0),reps:Math.max(1,+$("#nmR").value||10),sets:Math.max(1,Math.min(10,+$("#nmS").value||3)),rest:Math.max(0,+$("#nmP").value||90)};
+        const p=P(); p.custom=p.custom||[]; const id="u"+Date.now(); p.custom.push({id,n,group:g,def,ex:[[n,GROUP_N[g]||"",g,"",""]]}); if(p.gym&&p.gym.length) p.gym.push(id); save();
+        addToLive({machineId:id,name:n,machine:n,group:g,restSec:def.rest,targetSets:def.sets,targetReps:def.reps,targetKg:def.kg}); };
+    });
+  draw();
+}
+function addToLive(e){
+  const s=liveSession(); if(!s) return; closeSheet();
+  const id=FC.uuid(); let n=liveDo({type:"ADD_EXERCISE",exerciseId:id,exercise:e});
+  if(n && !FC.activeSet(n) && n.state==="active") liveDo({type:"SWITCH_EXERCISE",exerciseId:id});
+  rLive();
+}
+let liveKg=null, liveReps=null, liveFor=null, liveTimer=null;
+function rLive(){
+  const v=$("#v-live"); const s=liveSession();
+  if(!s){ v.innerHTML=`<p class="eyebrow">Тренировка на живо</p><h1 class="h-display">Няма активна тренировка</h1>
+    <button class="btn hot block" id="lvPlan" type="button">Започни днешната тренировка</button><button class="btn ghost block" id="lvQuick" type="button">Бърза тренировка (време + уреди)</button>`;
+    $("#lvPlan").onclick=()=>{ const ex=planExercises(); if(!ex.length) return quickSheet(); recoverySheet(l=>startLive(ex,"plan",l)); };
+    $("#lvQuick").onclick=quickSheet; return; }
+  const e=s.exercises.find(x=>x.id===s.activeExerciseId)||s.exercises[0]; const act=FC.activeSet(s);
+  const done=e?FC.completedSets(s,e.id):[]; const last=e?FC.lastByMachine(wk().sessions.filter(z=>z.id!==s.id))[e.machineId]:null;
+  if(liveFor!==(e&&e.id)+":"+done.length+":"+(act?act.id:"")){ liveFor=(e&&e.id)+":"+done.length+":"+(act?act.id:""); const prev=done[done.length-1];
+    liveKg = act?act.weightKg:(prev?prev.weightKg:(e?e.targetKg:0)); liveReps = act?act.reps:(prev?prev.reps:(e?e.targetReps:10)); }
+  const cardio=e&&e.group==="cardio", mob=e&&e.group==="mobility";
+  const resting=!act && s.restUntil && Date.parse(s.restUntil)>Date.now();
+  const st=s.state==="paused"?["ПАУЗА","var(--muted)"]:act?["СЕРИЯ","var(--hot)"]:resting?["ПОЧИВКА","var(--go)"]:["ГОТОВ","var(--accent)"];
+  v.innerHTML=`
+    <div class="row" style="justify-content:space-between;align-items:center"><div><p class="eyebrow">Тренировка на живо</p><div class="live-clock mono" id="lvClock">${clockText(s)}</div></div>
+      <span class="live-state" style="background:${st[1]}">${st[0]}</span></div>
+    <div class="chips" style="flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px">${s.exercises.map((x,i)=>{ const c=FC.completedSets(s,x.id).length; return `<button class="chip" type="button" data-lx="${x.id}" aria-pressed="${x.id===e.id}" style="flex:0 0 auto" ${act?"disabled":""}>${i+1}. ${esc(x.machine||x.name)} <b class="mono" style="margin-left:6px">${c}/${x.targetSets}</b></button>`; }).join("")}</div>
+    <div class="card live-card">
+      ${e.machine||e.cue?`<p class="eyebrow">${esc(e.machine||"")}${e.machine&&e.cue?" · ":""}${esc(e.cue||"")}</p>`:""}
+      <div class="h2" style="margin:0">${esc(e.name)}</div>
+      <div class="muted">Цел: ${e.targetSets} × ${e.targetReps}${cardio?" мин":""}${!cardio&&!mob&&e.targetKg?" · "+e.targetKg+" kg":""}${last&&!cardio?` · последно ${last.weightKg} kg × ${last.reps}`:""}</div>
+      ${resting?`<div class="rest-ring"><div class="mono" id="lvRest">${restText(s)}</div><span>почивка</span></div>
+        <div class="grid2"><button class="btn ghost" id="lvRest30" type="button">+30 сек</button><button class="btn ghost" id="lvSkipRest" type="button">Пропусни</button></div>`:""}
+      ${!cardio&&!mob?`<div class="stepper"><span>Тежест</span><button type="button" data-kg="-2.5" aria-label="Намали тежестта">−</button><b class="mono" id="lvKg">${liveKg} kg</b><button type="button" data-kg="2.5" aria-label="Увеличи тежестта">+</button></div>`:""}
+      <div class="stepper"><span>${cardio?"Минути":"Повторения"}</span><button type="button" data-rp="-1" aria-label="Намали">−</button><b class="mono" id="lvReps">${liveReps}</b><button type="button" data-rp="1" aria-label="Увеличи">+</button></div>
+      ${s.state==="paused"?`<button class="btn block live-main" id="lvResume" type="button">Продължи</button>`:
+        act?`<button class="btn hot block live-main" id="lvEnd" type="button">Край на серията · запиши</button><button class="btn ghost block" id="lvCancelSet" type="button">Отмени серията</button>`:
+        `<button class="btn block live-main" id="lvStart" type="button">${done.length>=e.targetSets?"Още една серия (по желание)":"Започни серия "+(done.length+1)}</button>`}
+      ${done.length?`<div>${done.map((x,i)=>`<button class="set-row" type="button" data-ed="${x.id}"><span>Серия ${i+1}</span><b class="mono">${cardio?x.reps+" мин":x.weightKg+" kg × "+x.reps}</b><span class="muted">${x.edited?"поправено":x.source==="manual"?"ръчно":"от часовник"} ✎</span></button>`).join("")}</div>`:""}
+    </div>
+    <div class="grid2"><button class="btn ghost" id="lvAdd" type="button" ${act?"disabled":""}>Смени / добави уред</button>
+      ${s.state==="active"?`<button class="btn ghost" id="lvPause" type="button" ${act?"disabled":""}>Пауза</button>`:`<span></span>`}</div>
+    <button class="btn hot block" id="lvFinish" type="button" ${act?"disabled":""}>Завърши тренировката</button>
+    <button class="btn ghost block" id="lvCancel" type="button">Прекрати без запис като завършена</button>
+    <p class="note">Килограмите и повторенията се записват само когато ги потвърдиш. FIT не брои повторения автоматично и не разпознава уреда без теб.</p>`;
+  v.querySelectorAll("[data-lx]").forEach(b=>b.onclick=()=>{ if(b.dataset.lx!==e.id){ liveDo({type:"SWITCH_EXERCISE",exerciseId:b.dataset.lx}); rLive(); } });
+  v.querySelectorAll("[data-kg]").forEach(b=>b.onclick=()=>{ liveKg=Math.max(0,Math.round((liveKg+ +b.dataset.kg)*2)/2); $("#lvKg").textContent=liveKg+" kg"; });
+  v.querySelectorAll("[data-rp]").forEach(b=>b.onclick=()=>{ liveReps=Math.max(0,liveReps+ +b.dataset.rp); $("#lvReps").textContent=liveReps; });
+  const on=(id,f)=>{ const el=$(id); if(el) el.onclick=f; };
+  on("#lvStart",()=>{ liveDo({type:"START_SET",setId:FC.uuid(),weightKg:liveKg,reps:liveReps}); buzz(30); rLive(); });
+  on("#lvEnd",()=>{ const a=FC.activeSet(liveSession()); if(!a) return; liveDo({type:"COMPLETE_SET",setId:a.id,reps:liveReps,weightKg:cardio||mob?0:liveKg,source:"manual"}); buzz(60); rLive(); });
+  on("#lvCancelSet",()=>{ const a=FC.activeSet(liveSession()); if(a){ liveDo({type:"CANCEL_SET",setId:a.id}); rLive(); } });
+  on("#lvSkipRest",()=>{ liveDo({type:"SKIP_REST"}); rLive(); });
+  on("#lvRest30",()=>{ const s2=liveSession(); s2.restUntil=new Date(Date.parse(s2.restUntil)+30000).toISOString(); persistLive(s2); restNotify(s2); rLive(); });
+  on("#lvPause",()=>{ liveDo({type:"PAUSE_WORKOUT"}); rLive(); });
+  on("#lvResume",()=>{ liveDo({type:"RESUME_WORKOUT"}); rLive(); });
+  on("#lvAdd",addExerciseSheet);
+  on("#lvFinish",finishLive);
+  on("#lvCancel",()=>{ liveDo({type:"CANCEL_WORKOUT"}); toast("Тренировка","Прекратена. Записаните серии остават в историята."); show("today"); });
+  v.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>editSetSheet(b.dataset.ed));
+  clearInterval(liveTimer);
+  liveTimer=setInterval(()=>{ if(TAB!=="live"){ clearInterval(liveTimer); return; } const s2=liveSession(); if(!s2) return;
+    const c=$("#lvClock"); if(c) c.textContent=clockText(s2);
+    const r=$("#lvRest"); if(r){ if(Date.parse(s2.restUntil)<=Date.now()){ buzz([120,80,120]); dropSound(); liveDo({type:"SKIP_REST"}); rLive(); } else r.textContent=restText(s2); } },1000);
+}
+function clockText(s){ const sec=s.startedAt?Math.max(0,Math.round((Date.now()-Date.parse(s.startedAt))/1000)):0; return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0"); }
+function restText(s){ const sec=Math.max(0,Math.ceil((Date.parse(s.restUntil)-Date.now())/1000)); return Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"); }
+function buzz(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} }
+function editSetSheet(id){
+  const s=liveSession(); const x=s&&s.sets.find(z=>z.id===id); if(!x) return;
+  sheet(`<div class="grab"></div><p class="eyebrow">Поправи серия</p><div class="grid2"><label>Тежест (kg)<input class="in" id="esK" type="number" inputmode="decimal" value="${x.weightKg}"></label><label>Повторения<input class="in" id="esR" type="number" inputmode="numeric" value="${x.reps}"></label></div>
+    <button class="btn block" id="esOk" type="button">Запази</button><button class="btn ghost block" data-close type="button">Затвори</button>`, h=>{
+      h.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeSheet);
+      $("#esOk").onclick=()=>{ const k=parseFloat($("#esK").value), r=parseInt($("#esR").value,10); if(liveDo({type:"EDIT_SET",setId:id,weightKg:k,reps:r})){ closeSheet(); rLive(); } };
+    });
+}
+function finishLive(){
+  const s=liveSession(); if(!s) return; const sm=FC.summary(s);
+  if(!sm.sets){ sheet(`<div class="grab"></div><div class="h2">Няма записани серии</div><p class="muted" style="margin:0">Запиши поне една серия или прекрати тренировката.</p><button class="btn block" data-close type="button">Добре</button>`,h=>h.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeSheet)); return; }
+  const n=liveDo({type:"END_WORKOUT"}); if(!n) return;
+  const p=P(), t=todayISO(); p.log[t]=p.log[t]||{}; p.log[t].session=n.id;
+  const rs=reschedToday(); if(rs){ rs.done=true; save(); }
+  const wasDone=p.log[t].complete; if(n.kind!=="mobility") markWorkoutDone(); else save();
+  sheet(`<div class="grab"></div><p class="eyebrow">Тренировката е записана</p><div class="h-display">Браво, ${esc(p.name)}</div>
+    <div class="stats"><div class="stat"><b>${sm.sets}</b><span>серии</span></div><div class="stat"><b>${sm.minutes}</b><span>минути</span></div><div class="stat"><b>${sm.volumeKg}</b><span>kg общо</span></div></div>
+    <div>${sm.exercises.map(x=>`<div class="ex-meta">${esc(x.name)} · ${x.sets}/${x.target} серии</div>`).join("")}</div>
+    <p class="muted" style="margin:0">Данните са ръчно потвърдени. Утре — възстановяване и вода.</p><button class="btn block" data-close type="button">Супер</button>`, h=>h.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>{ closeSheet(); if(!wasDone) afterWorkoutVenue(); }));
+  show("today");
+}
+/* ---------- Пропусната тренировка ---------- */
+function reschedToday(){ const p=P(); if(!p||!p.resched) return null; const t=todayISO(); return p.resched.find(r=>r.at.slice(0,10)===t && !r.done)||null; }
+function missedCheck(){
+  const p=P(); if(!p||p.id==="demo") return false;
+  const days=FC.missedDays({today:todayISO(), start:p.start, days:trainingDays(p), log:p.log});
+  if(!days.length) return false;
+  missedSheet(days[0]); return true;
+}
+function missedSheet(d){
+  const p=P(); const dn=new Date(d+"T12:00:00").toLocaleDateString("bg-BG",{weekday:"long",day:"numeric",month:"long"});
+  let st={step:"ask",reason:"",details:"",alternative:"",newTime:""};
+  const tomorrow=new Date(Date.now()+864e5); const defT=tomorrow.toISOString().slice(0,10)+"T"+(notifCfg().evening||"18:00");
+  const draw=()=>sheet(`<div class="grab"></div><p class="eyebrow">${esc(dn)}</p>
+    ${st.step==="ask"?`<div class="h2">Как мина тренировката?</div><p class="muted" style="margin:0">Беше в плана. Без вина — просто да знаем как да продължим.</p>
+      <button class="btn block" id="msDone" type="button">Завърших я</button><button class="btn ghost block" id="msSkip" type="button">Пропуснах я</button><button class="btn ghost block" id="msRe" type="button">Пренасрочи</button><button class="btn ghost block" id="msLater" type="button">Не сега</button>`:
+    `<div class="h2">${st.step==="re"?"Кога ти е удобно?":"Какво се случи?"}</div>
+      <div class="chips">${Object.entries(FC.SKIP_REASONS).map(([k,n])=>`<button class="chip" type="button" data-rs="${k}" aria-pressed="${st.reason===k}">${esc(n)}</button>`).join("")}</div>
+      ${st.reason&&st.reason!=="private"?`<label>Подробности (по желание)<input class="in" id="msDet" value="${esc(st.details)}" placeholder="Кратко, ако искаш"></label>`:""}
+      ${st.reason?`<b>Какво да направим вместо това?</b><div class="chips">${FC.alternativesFor(st.reason).map(k=>`<button class="chip" type="button" data-alt="${k}" aria-pressed="${st.alternative===k}">${esc(FC.ALTERNATIVES[k])}</button>`).join("")}</div>`:""}
+      ${st.alternative==="reschedule"?`<label>Нов ден и час<input class="in" id="msWhen" type="datetime-local" value="${esc(st.newTime||defT)}"></label><p class="note">Пренасрочената тренировка заменя, а не добавя — не удвояваме натоварването.</p>`:""}
+      ${st.reason==="injury"||st.reason==="illness"?`<p class="note">При болка или болест почивката е на първо място. Ако симптомите не минават, потърси лекар.</p>`:""}
+      <button class="btn block" id="msOk" type="button" ${st.reason&&st.alternative?"":"disabled"}>Потвърди</button><button class="btn ghost block" id="msBack" type="button">Назад</button>`}`, h=>{
+      const on=(id,f)=>{ const el=$(id); if(el) el.onclick=f; };
+      on("#msDone",()=>{ p.log[d]=p.log[d]||{}; p.log[d].complete=true; p.log[d].confirmedLate=true; p.xp+=30; save(); closeSheet(); toast("Записано","Тренировката от "+dn+" е отбелязана."); render(); });
+      on("#msSkip",()=>{ st.step="skip"; draw(); }); on("#msRe",()=>{ st.step="re"; st.alternative="reschedule"; draw(); });
+      on("#msLater",()=>{ p.log[d]=p.log[d]||{}; p.log[d].missedAsked=true; save(); closeSheet(); });
+      on("#msBack",()=>{ st={step:"ask",reason:"",details:"",alternative:"",newTime:""}; draw(); });
+      h.querySelectorAll("[data-rs]").forEach(b=>b.onclick=()=>{ st.reason=b.dataset.rs; if(!FC.alternativesFor(st.reason).includes(st.alternative)) st.alternative=st.step==="re"&&FC.alternativesFor(st.reason).includes("reschedule")?"reschedule":""; draw(); });
+      h.querySelectorAll("[data-alt]").forEach(b=>b.onclick=()=>{ const det=$("#msDet"); if(det) st.details=det.value; st.alternative=b.dataset.alt; draw(); });
+      const w=$("#msWhen"); if(w) w.onchange=()=>{ st.newTime=w.value; };
+      on("#msOk",()=>{ const det=$("#msDet"); if(det) st.details=det.value; if(st.alternative==="reschedule"&&!st.newTime) st.newTime=($("#msWhen")||{}).value||defT;
+        const r=FC.resolveSkip(Object.assign({},st,{confirmed:true}));
+        if(!r.ok) return toast("Провери",r.errors.includes("time_required")?"Избери ден и час.":"Избери причина.");
+        p.log[d]=p.log[d]||{}; p.log[d].skip=r.changes.skip;
+        if(r.changes.reschedule){ p.resched=(p.resched||[]).filter(x=>!x.done); p.resched.push({from:d, at:r.changes.reschedule.at, done:false}); }
+        if(r.changes.loadFactor<1) p.loadNext=r.changes.loadFactor;
+        save(); closeSheet(); scheduleNotifs();
+        toast("Разбрано", st.alternative==="reschedule"?"Пренасрочено за "+new Date(st.newTime).toLocaleString("bg-BG",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):FC.ALTERNATIVES[st.alternative]+" — без двойно натоварване.");
+        render(); });
+    });
+  draw();
+}
+/* известие вечерта, ако днешната тренировка не е отбелязана, и за пренасрочените */
+(function(){ const base=scheduleNotifs; scheduleNotifs=async function(){ await base.apply(this,arguments);
+  const LN=Plug("LocalNotifications"), p=P(); if(!NATIVE||!LN||!p||!notifCfg().on) return;
+  try{ const out=[], now=new Date(), t=todayISO();
+    if(trainingDays(p).includes(now.getDay()) && !(p.log[t]&&(p.log[t].complete||p.log[t].skip))){ const at=new Date(); at.setHours(21,0,0,0); if(at>now) out.push({id:7701,title:"Как мина днешната тренировка?",body:"Отбележи я, пропусни или пренасрочи — с един докосване.",schedule:{at,allowWhileIdle:true}}); }
+    (p.resched||[]).filter(r=>!r.done).forEach((r,k)=>{ const at=new Date(new Date(r.at).getTime()-3600e3); if(at>now) out.push({id:7710+k,title:"След 1 час: пренасрочената тренировка",body:"Същият план, без двойно натоварване.",schedule:{at,allowWhileIdle:true}}); });
+    out.forEach(n=>{ n.channelId="fit_drop"; n.sound="drop.wav"; }); if(out.length) await LN.schedule({notifications:out});
+  }catch(e){} }; })();
+function startToday(){
+  const ex=planExercises(); if(!ex.length) return quickSheet();
+  recoverySheet(l=>{ const p=P(); const ln=p.loadNext||1; p.loadNext=null; save(); startLive(ex,"plan",Math.min(l,ln)); });
+}
+(function(){ const base=rToday; rToday=function(){ base.apply(this,arguments);
+  const v=$("#v-today"); if(!v) return;
+  const s=liveSession(); const rs=reschedToday();
+  const host=v.querySelector("#liveHost");
+  if(host){
+    host.innerHTML = s ? `<button class="btn hot block live-main" data-go="live" type="button">Продължи тренировката на живо</button>` :
+      `<button class="btn hot block live-main" id="liveGo" type="button">▶ Започни на живо</button><button class="btn ghost block" id="quickGo" type="button">Имам малко време — бърза тренировка</button>`;
+  }
+  const rest=v.querySelector("#restHost");
+  if(rest) rest.innerHTML = s ? `<button class="btn hot block live-main" data-go="live" type="button">Продължи тренировката на живо</button>` : `<button class="btn ghost block" id="quickGo" type="button">Искам да потренирам — бърза тренировка</button>`;
+  if(rs){ const n=v.querySelector("#reschedNote"); if(n) n.innerHTML=`<span class="pill accent">Пренасрочена от ${new Date(rs.from+"T12:00:00").toLocaleDateString("bg-BG",{weekday:"long"})} · ${rs.at.slice(11,16)} · без двойно натоварване</span>`; }
+  const lg=$("#liveGo"); if(lg) lg.onclick=startToday;
+  const qg=$("#quickGo"); if(qg) qg.onclick=quickSheet;
+}; })();
+
 /* ============ СТАРТ ============ */
-["rToday","rScan","rPlan","rMama","rWorld","rGuide"].forEach(n=>{ const f=window[n]; if(typeof f==="function") window[n]=function(){ if(!P()) return; return f.apply(this,arguments); }; });
+["rToday","rScan","rPlan","rMama","rWorld","rGuide","rLive"].forEach(n=>{ const f=window[n]; if(typeof f==="function") window[n]=function(){ if(!P()) return; return f.apply(this,arguments); }; });
 const ICON="data:image/png;base64,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";
 let DL=null;
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>show(b.dataset.tab));
@@ -1992,14 +2349,20 @@ if(!S.people.length){
   render();
   S.people=[]; // не записваме госта
   setTimeout(()=>{ S.people=[]; onboarding(false); },300);
-} else { render(); dailyPopup(); }
+} else { render(); if(!missedCheck()) dailyPopup(); }
 if(NATIVE){ myBuild(); setTimeout(()=>{ if(P()) checkUpdates(false); }, 8000); }
 
+
+/* ============ PWA (iPhone и браузър) ============ */
+if(!NATIVE && "serviceWorker" in navigator && location.protocol==="https:" && !/claude|anthropic/.test(location.hostname)){ try{ navigator.serviceWorker.register("sw.js"); }catch(e){} }
 /* ============ ANDROID ============ */
 async function openLink(url){ const B=Plug("Browser"); if(NATIVE&&B){ try{ await B.open({url}); return; }catch(e){} } window.open(url,"_blank","noopener"); }
 async function openMama(){
   const L=Plug("AppLauncher");
-  if(L){ try{ const r=await L.canOpenUrl({url:"bg.ngerchev.mama"}); if(r&&r.value){ await L.openUrl({url:"bg.ngerchev.mama"}); return; } }catch(e){} }
+  const ios=IOS;
+  const target=ios?"bg.ngerchev.mama://open":"bg.ngerchev.mama";
+  if(L){ try{ const r=await L.canOpenUrl({url:target}); if(r&&r.value){ await L.openUrl({url:target}); return; } }catch(e){} }
+  if(ios||!NATIVE&&/iPhone|iPad|iPod/.test(navigator.userAgent)){ openLink(MAMA_URL); return; }
   toast("MAMA","MAMA не е инсталирано на този телефон — отварям изтеглянето.");
   openLink(MAMA_APK);
 }

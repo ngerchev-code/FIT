@@ -1,0 +1,45 @@
+name: iOS (iPhone) — компилиране
+
+on:
+  push:
+    branches: [main]
+    paths: ["www/**", "ios/**", "package.json", "capacitor.config.json", ".github/workflows/ios.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - name: Зависимости и синхронизация
+        run: |
+          echo "{\"code\": ${{ github.run_number }}}" > www/build.json
+          npm ci
+          npx cap sync ios
+      - name: Компилиране за симулатор (проверка)
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/sim CODE_SIGNING_ALLOWED=NO build | tail -40
+      - name: Компилиране за iPhone (без подпис)
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/dev \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} MARKETING_VERSION=1.0.${{ github.run_number }} \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build | tail -40
+          mkdir -p Payload && cp -R build/dev/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qr FIT-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FIT-iOS-unsigned
+          path: FIT-unsigned.ipa

@@ -8,6 +8,15 @@ Android приложение за начинаещи във фитнеса: ск
 
 Последната версия: https://github.com/ngerchev-code/fit/releases/latest/download/FIT.apk — отвори линка от телефона и инсталирай.
 
+## iPhone
+
+- **Веднага, като уеб приложение.** Отвори https://ngerchev-code.github.io/FIT/ в Safari, натисни „Сподели“ и избери „Добави към началния екран“. За целта първо трябва еднократно да се включи **Settings → Pages → Source: GitHub Actions**.
+- **Като приложение.** Проектът е в `ios/` (Capacitor 7, Swift Package Manager), а `.github/workflows/ios.yml` го компилира на macOS. За App Store или TestFlight е нужен Apple Developer акаунт (подпис и сертификат).
+
+## Състояние и план
+
+Виж `docs/IMPLEMENTATION_STATUS.md` и `CHANGELOG.md`. Заданието е в `docs/CLAUDE_IMPLEMENTATION_BRIEF.md`.
+
 ## Как се изгражда
 
 `.github/workflows/android.yml` изгражда подписан APK и AAB при всяка промяна в `www/` или `android/` и ги публикува в **Releases**.
