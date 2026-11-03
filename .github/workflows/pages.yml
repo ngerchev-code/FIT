@@ -24,7 +24,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Версия
-        run: echo "{\"code\": ${{ github.run_number }}, \"web\": true}" > www/build.json
+        run: |
+          echo "{\"code\": ${{ github.run_number }}, \"web\": true}" > www/build.json
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
