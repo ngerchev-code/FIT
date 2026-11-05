@@ -131,4 +131,15 @@ t("Алтернатива: днес у дома, навън, при травма
   assert.ok(tired.exercises.filter(e => e.group !== "mobility").every(e => e.targetSets === 2), "по-леко при умора");
 });
 
+t("Home & Street: филтър по уреди и тренировка от наличното", () => {
+  const onlyBw = C.hsList({ equip: [] }); assert.ok(onlyBw.length > 5 && onlyBw.every(e => e.eq.includes("bw")));
+  const bands = C.hsList({ equip: ["band"], group: "back" }); assert.ok(bands.some(e => e.n.includes("ластик")));
+  const p = C.planHome({ equip: ["bar", "kb", "rope"], minutes: 30, level: "mid" });
+  assert.ok(p.exercises.some(e => e.eq.includes("bar"))); assert.ok(p.exercises.some(e => e.eq.includes("kb")));
+  assert.ok(p.exercises.every(e => e.targetKg === 0)); assert.match(p.note, /Лост/);
+  const st = C.planHome({ place: "street", equip: ["db", "bar"], minutes: 20 });
+  assert.ok(!st.exercises.some(e => (e.eq || []).includes("db")), "дъмбели не са street уред");
+  const secs = st.exercises.reduce((a, e) => a + e.targetSets * 90, 0); assert.ok(secs <= 16 * 60 + 200);
+});
+
 console.log(`\n${n} теста — всички минаха`);

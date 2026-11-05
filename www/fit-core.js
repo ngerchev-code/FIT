@@ -352,11 +352,93 @@
       note: swapped ? `Сменихме на „${ENV[env]}“ заради ${swapped.why}.` : light ? "По-леко заради умората — една серия по-малко." : "Същите мускулни групи като днешната тренировка, без уреди." };
   }
 
+
+  /* ---------- Home & Street Fitness: уреди и упражнения ---------- */
+  const HS_EQ = { bw: "Собствена тежест", bar: "Лост за набирания", dips: "Успоредка", kb: "Гири (пудовки)", db: "Дъмбели", band: "Ластици",
+    trx: "TRX / ремъци", rings: "Халки", rope: "Въже за скачане", bench: "Пейка / стол", wheel: "Колело за корем", mat: "Постелка" };
+  const HS_STREET = ["bw", "bar", "dips", "bench", "rope", "rings", "trx"];
+  // [име, уреди (поне един), група, ниво 0–2, единица, съвет]
+  const HS_EX = [
+    ["Клякания", ["bw"], "legs", 0, "повт.", "Петите на земята, коленете над пръстите"],
+    ["Гоблет клек", ["kb", "db"], "legs", 0, "повт.", "Тежестта до гърдите, гърбът изправен"],
+    ["Български сплит клек", ["bench"], "legs", 1, "повт. на крак", "Задният крак на пейката, торсът изправен"],
+    ["Кетълбел суинг", ["kb"], "legs", 1, "повт.", "Движение от таза, не от ръцете"],
+    ["Напади с дъмбели", ["db"], "legs", 0, "повт. на крак", "Дълга крачка, коляното леко до земята"],
+    ["Глутеус мост с ластик", ["band"], "legs", 0, "повт.", "Ластикът над коленете, бутай коленете навън"],
+    ["Скокове от клек", ["bw"], "legs", 1, "повт.", "Меко приземяване"],
+    ["Пистол клек към пейка", ["bench"], "legs", 2, "повт. на крак", "Сядай контролирано на пейката"],
+    ["Румънска тяга с гира или дъмбели", ["kb", "db"], "back", 0, "повт.", "Права гръб, тазът назад"],
+    ["Набирания", ["bar"], "back", 1, "повт.", "Пълно провисване, брадичката над лоста"],
+    ["Негативни набирания", ["bar"], "back", 0, "повт.", "Скочи горе, спускай се бавно 3–5 сек"],
+    ["Австралийски набирания", ["bar", "trx", "rings"], "back", 0, "повт.", "Ниско хванато, тялото в права линия"],
+    ["Висене на лоста", ["bar"], "back", 0, "сек", "Раменете активни, не провисвай в ставите"],
+    ["Гребане с ластик", ["band"], "back", 0, "повт.", "Лопатките назад и надолу"],
+    ["Гребане с дъмбел", ["db"], "back", 0, "повт. на ръка", "Коляно и ръка на пейка/стол"],
+    ["Супермен", ["bw", "mat"], "back", 0, "повт.", "Ръце и крака леко нагоре"],
+    ["Лицеви опори", ["bw"], "chest", 0, "повт.", "Тялото в права линия; от колене при нужда"],
+    ["Кофички на успоредка", ["dips"], "chest", 1, "повт.", "Леко напред за гърди, раменете далеч от ушите"],
+    ["Лицеви опори с ластик", ["band"], "chest", 1, "повт.", "Ластикът през гърба, в ръцете"],
+    ["Преса с дъмбели", ["db"], "chest", 0, "повт.", "На пейка или на пода"],
+    ["Лицеви опори с крака на пейка", ["bench"], "chest", 1, "повт.", "Повече натоварване за горните гърди"],
+    ["Лицеви опори на халки", ["rings"], "chest", 2, "повт.", "Халките близо до тялото"],
+    ["Pike лицеви опори", ["bw"], "shoulders", 1, "повт.", "Таза високо, главата между ръцете"],
+    ["Преса над глава с ластик", ["band"], "shoulders", 0, "повт.", "Стегнат корем, без извиване в кръста"],
+    ["Преса с гира над глава", ["kb"], "shoulders", 1, "повт. на ръка", "Китката права, лакътят под гирата"],
+    ["Странично повдигане с дъмбели", ["db"], "shoulders", 0, "повт.", "До височината на раменете"],
+    ["Face pull с ластик", ["band"], "shoulders", 0, "повт.", "Към лицето, лактите високо — за стойката"],
+    ["Стойка на ръце до стена", ["bw"], "shoulders", 2, "сек", "Само ако се чувстваш уверен"],
+    ["Сгъване с ластик", ["band"], "arms", 0, "повт.", "Лактите до тялото"],
+    ["Сгъване с дъмбели", ["db"], "arms", 0, "повт.", "Без люлеене"],
+    ["Кофички на пейка", ["bench"], "arms", 0, "повт.", "Лактите назад"],
+    ["Тесни лицеви опори", ["bw"], "arms", 1, "повт.", "Лактите до тялото"],
+    ["Разгъване с ластик над глава", ["band"], "arms", 0, "повт.", "Лактите сочат нагоре"],
+    ["Набирания с обратен хват", ["bar"], "arms", 1, "повт.", "Дланите към теб"],
+    ["Планк", ["bw", "mat"], "core", 0, "сек", "Корем стегнат, без провисване"],
+    ["Повдигане на колене от вис", ["bar"], "core", 1, "повт.", "Без люлеене"],
+    ["L-sit на успоредка", ["dips"], "core", 2, "сек", "Краката прави напред"],
+    ["Колело за корем", ["wheel"], "core", 1, "повт.", "От колене, кръстът не провисва"],
+    ["Руски туист с гира", ["kb"], "core", 0, "повт.", "Бавно, гърбът изправен"],
+    ["Мъртва буболечка", ["mat", "bw"], "core", 0, "повт.", "Кръстът опрян в пода"],
+    ["Pallof преса с ластик", ["band"], "core", 0, "повт. на страна", "Не позволявай на ластика да те завърти"],
+    ["Въже за скачане", ["rope"], "cardio", 0, "мин", "Ниски подскоци на пръсти"],
+    ["Бърпи", ["bw"], "cardio", 1, "повт.", "Темпо, при което запазваш техниката"],
+    ["Катерач", ["bw"], "cardio", 0, "сек", "Таза ниско"],
+    ["Jumping jacks", ["bw"], "cardio", 0, "сек", "Меко приземяване"]
+  ].map(([n, eq, g, lv, unit, cue], i) => ({ id: "hs" + i, n, eq, g, lv, unit, cue }));
+  function hsList(o) {
+    o = o || {}; const have = new Set(["bw"].concat(o.equip || [])); const max = o.level === "adv" ? 2 : o.level === "mid" ? 1 : 1;
+    return HS_EX.filter(e => e.eq.some(q => have.has(q)) && (!o.group || e.g === o.group) && (o.all || e.lv <= max));
+  }
+  function planHome(o) {
+    o = o || {};
+    const place = o.place === "street" ? "street" : "home";
+    const equip = (o.equip || []).filter(q => place === "home" || HS_STREET.includes(q));
+    const minutes = Math.max(10, Math.min(60, o.minutes || 30));
+    const lvl = o.level === "adv" ? 2 : o.level === "mid" ? 1 : 0;
+    const reps = [10, 12, 15][lvl], hold = [20, 30, 45][lvl], sets = [2, 3, 3][lvl];
+    const pool = hsList({ equip, level: o.level });
+    const usedEq = new Set();
+    const score = e => (e.eq.includes("bw") ? 0 : 2) + (e.lv === lvl ? 1 : 0) + (e.eq.some(q => q !== "bw" && equip.includes(q) && !usedEq.has(q)) ? 1.5 : 0);   // избраните уреди, разнообразие, подходящо ниво
+    const order = (o.groups && o.groups.length ? o.groups : ["legs", "back", "chest", "core", "shoulders", "arms"]);
+    const budget = (minutes - 4) * 60, per = 45 + 45; let used = 0; const out = [], usedIds = new Set();
+    for (let round = 0; round < 3 && used < budget; round++) for (const g of order) {
+      const c = pool.filter(e => e.g === g && !usedIds.has(e.id)).sort((a, b) => score(b) - score(a))[0]; if (!c) continue;
+      const cost = sets * per; if (used + cost > budget) continue; usedIds.add(c.id); used += cost; c.eq.forEach(q => usedEq.add(q));
+      out.push({ machineId: "bw-" + c.id, name: c.n, machine: place === "street" ? "Street fitness" : "Home fitness", group: c.g, cue: c.cue, restSec: 45, targetSets: sets, targetKg: 0,
+        targetReps: c.unit === "сек" ? hold : c.unit === "мин" ? 2 : reps, unit: c.unit, eq: c.eq.filter(q => q !== "bw" && (equip.includes(q))) });
+    }
+    const rope = equip.includes("rope") && budget - used >= 180;
+    if (rope) out.push({ machineId: "bw-hs-rope", name: "Финал: въже за скачане", machine: place === "street" ? "Street fitness" : "Home fitness", group: "cardio", cue: "Ниски подскоци", restSec: 0, targetSets: 1, targetReps: 3, targetKg: 0, unit: "мин", eq: ["rope"] });
+    const names = equip.filter(q => q !== "bw").map(q => HS_EQ[q]);
+    return { env: place, title: place === "street" ? "Street fitness" : "Home fitness", minutes, exercises: out, swapped: null,
+      note: names.length ? "С твоите уреди: " + names.join(", ") + "." : "Само със собствена тежест." };
+  }
+
   /** Часовник с разминаване на часа: ако времето от устройството е на повече от 5 мин от телефона, ползваме телефона. */
   function trustAt(at, now) { const n = now ? Date.parse(now) : Date.now(); const t = Date.parse(at || ""); return Number.isFinite(t) && Math.abs(t - n) <= 300000 ? new Date(t).toISOString() : new Date(n).toISOString(); }
   const API = { uuid, newSession, apply, replay, summary, completedSets, activeSet, lastByMachine, planQuick, recovery, applyLoad,
     SKIP_REASONS, ALTERNATIVES, validateSkip, alternativesFor, missedDays, resolveSkip,
-    planHorizons, revisePlan, monthlyReview, monthIndex, addMonths, GOAL_FOCUS, trustAt, altPlan, ALT_ENV: ENV };
+    planHorizons, revisePlan, monthlyReview, monthIndex, addMonths, GOAL_FOCUS, trustAt, altPlan, ALT_ENV: ENV, HS_EQ, HS_EX, HS_STREET, hsList, planHome };
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   root.FITCore = API;
 })(typeof window !== "undefined" ? window : globalThis);
