@@ -10,15 +10,16 @@
 
 👤 Стъпки:
 
-1. **Първо направи архив** (Меню → Архив и възстановяване). Новият ключ изисква FIT да се деинсталира и инсталира отново веднъж. Това важи и за часовника.
-2. GitHub → ngerchev-code/FIT → **Settings → Secrets and variables → Actions → New repository secret**:
-   - `FIT_KEYSTORE_B64` — дългият текст от файла с ключа;
+1. GitHub → ngerchev-code/FIT → **Settings → Secrets and variables → Actions → New repository secret**:
+   - `FIT_KEYSTORE_B64` — дългият текст от файла `FIT_KEYSTORE_B64.txt`;
    - `FIT_STORE_PASSWORD` — паролата;
    - `FIT_KEY_PASSWORD` — същата парола;
    - `FIT_KEY_ALIAS` — `fit-upload`.
-3. Actions → **Android APK → Run workflow**.
-4. Деинсталирай FIT от телефона и часовника. Инсталирай новия `FIT.apk` и `FIT-watch.apk`, после Меню → Архив → **Възстанови с код от облака**.
-5. В Google Play Console при първото качване на AAB избери **Play App Signing** (Google пази ключа за подписване, ние пазим само upload ключа).
+2. Actions → **Android APK → Run workflow** (или следващата промяна го пуска сама).
+3. **Не е нужно да деинсталираш.** CI подписва APK със смяна на ключа (APK Signature Scheme v3 + родословие „стар → нов ключ“, `apksigner rotate`). Инсталираният FIT на телефона и часовника приема новия ключ като обикновено обновление. Работи на Android 9+; по-старите устройства продължават да проверяват стария подпис (v2). Връщане към стария ключ не се приема (защита от подмяна).
+4. В Google Play Console при първото качване на AAB избери **Play App Signing** (Google пази ключа за подписване, ние пазим само upload ключа).
+
+Архивът (Меню → Архив и възстановяване) остава препоръчителен преди всяка голяма промяна.
 
 Пази файла с ключа и паролата извън чата: в мениджър на пароли или офлайн. Без тях не можеш да обновяваш FIT в Google Play, докато Google не смени ключа.
 

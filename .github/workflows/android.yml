@@ -76,8 +76,28 @@ jobs:
           cp app/build/outputs/apk/release/app-release.apk ../FIT-1.0.${VERSION_CODE}.apk
           cp app/build/outputs/bundle/release/app-release.aab ../FIT-1.0.${VERSION_CODE}.aab
           cp app/build/outputs/apk/release/app-release.apk ../FIT.apk
-          rm -f "$RUNNER_TEMP/fit-upload.jks"
           cp wear/build/outputs/apk/release/wear-release.apk ../FIT-watch.apk
+
+      - name: Смяна на ключа без деинсталиране (APK key rotation, v3 + родословие)
+        if: env.FIT_KEYSTORE_FILE != ''
+        run: |
+          set -e
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1); SIGN="$BT/apksigner"
+          echo "apksigner: $SIGN"
+          # родословие: старият (публичен) ключ → новият ключ от Secrets
+          "$SIGN" rotate --out "$RUNNER_TEMP/fit-lineage" \
+            --old-signer --ks android/keystore/fit-release.jks --ks-key-alias fit --ks-pass pass:fit-release-2026 \
+            --new-signer --ks "$FIT_KEYSTORE_FILE" --ks-key-alias "${FIT_KEY_ALIAS:-fit-upload}" --ks-pass env:FIT_STORE_PASSWORD
+          for APK in FIT.apk FIT-1.0.${VERSION_CODE}.apk FIT-watch.apk; do
+            "$SIGN" sign --rotation-min-sdk-version 28 --lineage "$RUNNER_TEMP/fit-lineage" \
+              --ks android/keystore/fit-release.jks --ks-key-alias fit --ks-pass pass:fit-release-2026 \
+              --next-signer --ks "$FIT_KEYSTORE_FILE" --ks-key-alias "${FIT_KEY_ALIAS:-fit-upload}" --ks-pass env:FIT_STORE_PASSWORD \
+              "$APK"
+            "$SIGN" verify --verbose --print-certs "$APK" | tee "verify-$APK.txt" | grep -E "Verified using v3 scheme|Number of signers|lineage" || true
+            grep -q "Verified using v3 scheme (APK Signature Scheme v3): true" "verify-$APK.txt"
+          done
+          rm -f "$RUNNER_TEMP/fit-upload.jks" "$RUNNER_TEMP/fit-lineage"
+          echo "Готово: инсталираните копия приемат новия ключ без деинсталиране (Android 9+)."
 
       - name: Издание (Release) с APK за сваляне от телефона
         uses: softprops/action-gh-release@v2
