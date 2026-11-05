@@ -39,7 +39,13 @@ jobs:
           if [ -n "$FIT_KEYSTORE_B64" ]; then
             echo "$FIT_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/fit-upload.jks"
             echo "FIT_KEYSTORE_FILE=$RUNNER_TEMP/fit-upload.jks" >> "$GITHUB_ENV"
-            echo "Подписване с ключа от Secrets."
+            # проверка, че ключът е копиран цял (стойностите не са тайна — само отпечатъци)
+            echo "Размер: $(stat -c %s "$RUNNER_TEMP/fit-upload.jks") байта (очаквано 4384)"
+            echo "SHA-256 на файла: $(sha256sum "$RUNNER_TEMP/fit-upload.jks" | cut -c1-64)"
+            FP=$(keytool -list -keystore "$RUNNER_TEMP/fit-upload.jks" -storepass "$FIT_STORE_PASSWORD" -alias "${FIT_KEY_ALIAS:-fit-upload}" 2>&1 | grep -o 'SHA-256): .*' || true)
+            echo "Отпечатък на сертификата: ${FP:-НЕ СЕ ЧЕТЕ (грешна парола/псевдоним?)}"
+            [ "$FIT_KEY_PASSWORD" = "$FIT_STORE_PASSWORD" ] && echo "✓ FIT_KEY_PASSWORD съвпада с FIT_STORE_PASSWORD." || { echo "::error::FIT_KEY_PASSWORD е различна от FIT_STORE_PASSWORD."; exit 1; }
+            echo "$FP" | grep -q "85:CE:12:F6:C6:72:43:A2" && echo "✓ Ключът е цял, паролата и псевдонимът са верни." || { echo "::error::Ключът от Secrets не съвпада или паролата/псевдонимът са грешни."; exit 1; }
           else
             echo "::warning::FIT_KEYSTORE_B64 не е зададен — подписвам със стария публичен ключ. Задай Secrets преди Google Play (docs/PLAY_RELEASE.md)."
           fi
