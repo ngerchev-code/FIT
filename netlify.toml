@@ -1,0 +1,7 @@
+# Netlify: FIT сървърът е в папка server/ (функции scan, backup, report).
+# Тук е зададена папката, за да не се настройва ръчно в Netlify.
+[build]
+  base = "server"
+  publish = "public"
+  functions = "netlify/functions"
+  command = ""
