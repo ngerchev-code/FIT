@@ -142,4 +142,21 @@ t("Home & Street: филтър по уреди и тренировка от на
   const secs = st.exercises.reduce((a, e) => a + e.targetSets * 90, 0); assert.ok(secs <= 16 * 60 + 200);
 });
 
+t("Напомняне за обновяване: по въздуха, голямо обновление с пауза, неактивност", () => {
+  const now = Date.parse("2026-11-05T10:00:00");
+  const live = C.updatePlan({ now, latest: 27, installed: 26, minNative: 13, nativeBuild: 13, state: { lastCheck: now - 7 * 3600e3 } });
+  assert.equal(live.action, "live"); assert.ok(!live.notify.some(n => n.kind === "apk")); assert.ok(live.checkNow);
+  const a0 = C.updatePlan({ now, latest: 27, installed: 26, minNative: 14, nativeBuild: 13, news: ["Home & Street"] });
+  assert.equal(a0.action, "apk"); assert.ok(a0.banner);
+  const n0 = a0.notify.find(n => n.kind === "apk"); assert.equal(n0.count, 1); assert.ok(n0.at - now > 20 * 3600e3 && n0.at - now < 34 * 3600e3, "след ~1 ден");
+  const a2 = C.updatePlan({ now, latest: 27, installed: 26, minNative: 14, nativeBuild: 13, state: { apkFor: 27, apkCount: 2 } });
+  assert.ok(a2.notify.find(n => n.kind === "apk").at - now > 6 * 864e5, "третото след ~7 дни");
+  const a3 = C.updatePlan({ now, latest: 27, installed: 26, minNative: 14, nativeBuild: 13, state: { apkFor: 27, apkCount: 3 } });
+  assert.ok(!a3.notify.some(n => n.kind === "apk"), "спира след 3 напомняния");
+  const idle = C.updatePlan({ now, latest: 26, installed: 26, state: { lastCheck: now } });
+  assert.equal(idle.action, "none"); assert.ok(!idle.checkNow);
+  const i = idle.notify.find(n => n.kind === "idle"); assert.ok(i.at - now > 3.5 * 864e5);
+  assert.equal(C.updatePlan({ now, consent: false }).notify.length, 0);
+});
+
 console.log(`\n${n} теста — всички минаха`);

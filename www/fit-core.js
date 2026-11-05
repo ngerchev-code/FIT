@@ -434,11 +434,39 @@
       note: names.length ? "С твоите уреди: " + names.join(", ") + "." : "Само със собствена тежест." };
   }
 
+
+  /* ---------- Напомняне за обновяване (новости и умения за тренировки) ----------
+     Принцип: напомняме само когато има смисъл и все по-рядко, за да не досаждаме.
+     1) Обновление „по въздуха“ (web) → прилага се само; напомняне не е нужно.
+     2) Голямо обновление (нужна нова инсталация) → напомняне след 1, 3 и 7 дни, после спира (макс. 3 за версия).
+     3) Неактивност → ако FIT не е отварян 4 дни, едно напомняне с новост; пренасрочва се при всяко отваряне.
+     4) Проверка за нова версия при отваряне и при връщане в приложението, ако са минали над 6 часа. */
+  const UPD_BACKOFF_DAYS = [1, 3, 7];
+  function updatePlan(o) {
+    o = o || {};
+    const now = o.now || Date.now(), day = 864e5, st = o.state || {};
+    const latest = o.latest || 0, installed = o.installed || 0, nativeOk = (o.minNative || 0) <= (o.nativeBuild || 0);
+    const out = { action: "none", notify: [], banner: false, checkNow: !st.lastCheck || now - st.lastCheck > 6 * 3600e3 };
+    if (latest > installed) out.action = nativeOk ? "live" : "apk";
+    const at = (d, h) => { const t = new Date(now + d * day); t.setHours(h || 19, 7, 0, 0); return t.getTime(); };
+    if (out.action === "apk") {
+      out.banner = true;
+      const rem = st.apkFor === latest ? (st.apkCount || 0) : 0;
+      if (rem < UPD_BACKOFF_DAYS.length) out.notify.push({ id: 7720, kind: "apk", at: at(UPD_BACKOFF_DAYS[rem]), count: rem + 1,
+        title: "Голямо обновление на FIT 1.0." + latest, body: (o.news && o.news[0] ? o.news[0] + " · " : "") + "Инсталирай веднъж — данните ти остават." });
+    }
+    if (o.consent !== false) {
+      const teaser = o.news && o.news.length ? o.news[(Math.floor(now / day)) % o.news.length] : "Нови тренировки, съвети и умения те чакат.";
+      out.notify.push({ id: 7721, kind: "idle", at: at(4, 18), title: "FIT има новости за теб", body: teaser + " Отвори, за да се обнови." });
+    }
+    return out;
+  }
+
   /** Часовник с разминаване на часа: ако времето от устройството е на повече от 5 мин от телефона, ползваме телефона. */
   function trustAt(at, now) { const n = now ? Date.parse(now) : Date.now(); const t = Date.parse(at || ""); return Number.isFinite(t) && Math.abs(t - n) <= 300000 ? new Date(t).toISOString() : new Date(n).toISOString(); }
   const API = { uuid, newSession, apply, replay, summary, completedSets, activeSet, lastByMachine, planQuick, recovery, applyLoad,
     SKIP_REASONS, ALTERNATIVES, validateSkip, alternativesFor, missedDays, resolveSkip,
-    planHorizons, revisePlan, monthlyReview, monthIndex, addMonths, GOAL_FOCUS, trustAt, altPlan, ALT_ENV: ENV, HS_EQ, HS_EX, HS_STREET, hsList, planHome };
+    planHorizons, revisePlan, monthlyReview, monthIndex, addMonths, GOAL_FOCUS, trustAt, altPlan, ALT_ENV: ENV, HS_EQ, HS_EX, HS_STREET, hsList, planHome, updatePlan, UPD_BACKOFF_DAYS };
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   root.FITCore = API;
 })(typeof window !== "undefined" ? window : globalThis);
