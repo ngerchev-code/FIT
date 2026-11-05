@@ -8,7 +8,8 @@ const MAX_PROMPT = 4000;
 export default async (req, context) => {
   if (req.method === "OPTIONS") return new Response("", { status: 204, headers: CORS });
   if (req.method !== "POST") return json(405, { error: "POST only" });
-  const key = process.env.ANTHROPIC_API_KEY;
+  // името на променливата се приема без значение от малки и главни букви (напр. Anthropic_api_key)
+  const key = process.env.ANTHROPIC_API_KEY || Object.entries(process.env).find(([k]) => k.toUpperCase() === "ANTHROPIC_API_KEY")?.[1];
   if (!key) return json(500, { error: "ANTHROPIC_API_KEY липсва в Netlify" });
   if (!originOk(req)) return json(403, { error: "origin" });
   if (+(req.headers.get("content-length") || 0) > 2_000_000) return json(413, { error: "too big" });
