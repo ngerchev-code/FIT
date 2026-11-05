@@ -14,10 +14,14 @@ android {
     }
     signingConfigs {
         release {
-            storeFile file("../keystore/fit-release.jks")
-            storePassword System.getenv("FIT_STORE_PASSWORD") ?: "fit-release-2026"
-            keyAlias System.getenv("FIT_KEY_ALIAS") ?: "fit"
-            keyPassword System.getenv("FIT_KEY_PASSWORD") ?: "fit-release-2026"
+            // Ключът за подписване идва от GitHub Secrets (FIT_KEYSTORE_B64 → FIT_KEYSTORE_FILE).
+            // Старият ключ в android/keystore/ е публичен и се ползва само докато Secrets не са зададени.
+            def ks = System.getenv("FIT_KEYSTORE_FILE")
+            def legacy = !(ks && file(ks).exists())
+            storeFile(legacy ? file("../keystore/fit-release.jks") : file(ks))
+            storePassword(legacy ? "fit-release-2026" : System.getenv("FIT_STORE_PASSWORD"))
+            keyAlias(legacy ? "fit" : (System.getenv("FIT_KEY_ALIAS") ?: "fit-upload"))
+            keyPassword(legacy ? "fit-release-2026" : (System.getenv("FIT_KEY_PASSWORD") ?: System.getenv("FIT_STORE_PASSWORD")))
         }
     }
     buildTypes {

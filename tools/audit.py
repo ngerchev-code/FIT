@@ -3,7 +3,9 @@
 import sys, json, asyncio
 from playwright.async_api import async_playwright
 
-URL = "file:///home/claude/fit-app/www/index.html"
+import pathlib
+URL = (pathlib.Path(__file__).resolve().parent.parent / "www" / "index.html").as_uri()
+CLOUD = {}  # облачен архив на фалшивия FIT сървър (fit.test)
 FAKE_CAP = """
 window.__calls=[];
 const mk=(name)=>new Proxy({}, {get:(t,k)=>async(...a)=>{ window.__calls.push(name+'.'+String(k));
@@ -51,6 +53,13 @@ async def run(native):
             if "openfoodfacts" in u:
                 if "5449000000996" in u: return await r.fulfill(json={"status":1,"product":{"code":"5449000000996","product_name":"Протеинов шейк","brands":"Тест","allergens_tags":["en:milk"],"traces_tags":["en:soybeans"],"ingredients_text":"обезмаслено мляко, суроватъчен протеин, какао, E407, E955","nutriscore_grade":"a","nova_group":4,"additives_tags":["en:e407","en:e955"],"nutriments":{"energy-kcal_100g":60,"fat_100g":0.5,"saturated-fat_100g":0.3,"sugars_100g":3,"salt_100g":0.2,"proteins_100g":10,"fiber_100g":1},"serving_quantity":330}})
                 return await r.fulfill(json={"status":0})
+            if u.startswith("https://fit.test/api/backup"):
+                m = r.request.method; i = u.split("id=")[-1] if "id=" in u else ""
+                if m == "PUT":
+                    j = json.loads(r.request.post_data or "{}"); CLOUD[j["id"]] = j["box"]; return await r.fulfill(json={"ok":True})
+                if m == "GET": return await r.fulfill(json={"box":CLOUD[i]}) if i in CLOUD else await r.fulfill(status=404, json={"error":"not found"})
+                if m == "DELETE": CLOUD.pop(i, None); return await r.fulfill(json={"ok":True})
+            if u.startswith("https://fit.test/api/report"): CLOUD["reports"] = CLOUD.get("reports",0)+1; return await r.fulfill(json={"ok":True})
             if "nominatim" in u: return await r.fulfill(json=[{"lat":"42.69","lon":"23.32"}])
             if u.startswith("file://"): return await r.continue_()
             return await r.abort()
@@ -58,6 +67,7 @@ async def run(native):
         if native: await page.add_init_script(FAKE_CAP)
         await page.goto(URL)
         await page.wait_for_timeout(800)
+        first_restore = await page.locator("#csRestore").count()
         # онбординг
         await page.click("#csOk")
         await page.fill("#o-name", "Тест")
@@ -131,6 +141,29 @@ async def run(native):
         pv = await page.evaluate('(async()=>JSON.stringify({loc:S.consent.loc, quiet:S.quiet.from, pos: await myPosition()}))()')
         steps.append("ok   ↳ privacy: "+pv)
         await step("privacy restore", 'S.consent.loc=true; save()')
+        # облачен архив, отчети за грешки, политика за поверителност (fit-cloud.js)
+        steps.append(("ok   ↳ cloud: първо пускане има „Имам архив“" if first_restore else "FAIL cloud: няма бутон „Имам архив“ при първо пускане"))
+        await step("cloud: server url", 'S.ai={url:"https://fit.test/api/scan"}; save()')
+        await step("cloud: drawer item", 'openDrawer(); document.querySelector("[data-dr=\'x:backup\']").click(); if(!document.querySelector("#bkOn")) throw "no bkOn"')
+        await step("cloud: enable + code", 'FCL.backupSheet(); document.querySelector("#bkOn").click(); if(!/^[0-9A-Z]{5}(-[0-9A-Z]{5}){3}$/.test(document.querySelector(".sheet .card").textContent.trim())) throw "no code"; document.querySelector("#scOk").click()')
+        await page.wait_for_timeout(2500)
+        bk = await page.evaluate('JSON.parse(localStorage.getItem("fit_backup")||"{}")')
+        steps.append(("ok   ↳ cloud: архивиран, "+str(bk.get("kb"))+" KB, в облака "+str(len([k for k in CLOUD if k!="reports"]))+" блок") if bk.get("at") and any(k!="reports" for k in CLOUD) else "FAIL cloud: архивът не е качен "+json.dumps(bk))
+        plain = json.dumps(CLOUD, ensure_ascii=False)
+        steps.append("ok   ↳ cloud: сървърът не вижда името" if "Тест" not in plain else "FAIL cloud: открит текст в архива")
+        await closesheets()
+        await page.evaluate('FCL.restoreCodeSheet(); document.querySelector("#rcIn").value=JSON.parse(localStorage.getItem("fit_backup")).code.toLowerCase(); document.querySelector("#rcGo").click()')
+        await page.wait_for_timeout(3000)
+        rs = await page.evaluate('document.querySelector("#rsGo")?document.querySelector(".sheet").textContent.replace(/\\s+/g," ").slice(0,140):""')
+        steps.append(("ok   ↳ cloud: възстановяване намира архива: "+rs) if "Тест" in rs else "FAIL cloud: възстановяването не намери архива: "+await page.evaluate("(document.querySelector('.sheet')?.textContent||'no sheet').slice(0,160)+' | '+document.querySelector('#toastT').textContent"))
+        await closesheets()
+        await step("cloud: wrong code", 'FCL.restoreCodeSheet(); document.querySelector("#rcIn").value="ABCDE-FGHJK-MNPQR-STVWX"; document.querySelector("#rcGo").click()')
+        await step("privacy: new buttons", 'privacySheet(); ["#pvBk","#pvDg","#pvPol"].forEach(id=>{ if(!document.querySelector(id)) throw "missing "+id; }); document.querySelector("#pvPol").click(); if(!document.querySelector("iframe[src=\'privacy.html\']")) throw "no policy"')
+        await page.evaluate('setTimeout(()=>{ throw new Error("FIT тестова грешка") },0)'); await page.wait_for_timeout(400)
+        await step("diag: logged + sheet", 'if(!(JSON.parse(localStorage.getItem("fit_diag")||"[]")).some(x=>x.m.includes("тестова"))) throw "not logged"; FCL.diagSheet()')
+        await step("diag: consent + send", 'S.consent.diag=true; save(); FCL.sendDiag()'); await page.wait_for_timeout(800)
+        steps.append("ok   ↳ cloud: отчетът е изпратен" if CLOUD.get("reports") else "FAIL cloud: отчетът не е изпратен")
+        await step("diag: consent off", 'S.consent.diag=false; save()')
         await step("export data", 'exportData()')
         await step("delete sheet opens", 'deleteSheet(); document.querySelector("#dlTxt").value="не"; document.querySelector("#dlGo").click()')
         await step("food: open + milk allergy", 'P().allergies=["soy"]; show("food"); document.querySelector("[data-fa=milk]").click()')
@@ -223,7 +256,8 @@ async def main():
         steps, errs, logs, ov, calls = await run(native)
         print("=== режим", "ANDROID" if native else "УЕБ", "===")
         print("\n".join(s for s in steps if not s.startswith("ok")) or "всички стъпки ok ("+str(len(steps))+")")
-        print("\n".join(s for s in steps if "↳" in s and ("live" in s or "missed" in s or "след" in s or "path" in s or "privacy" in s or "food" in s or "watch" in s or "alt " in s or "health" in s or "hs" in s or "upd" in s)))
+        print("\n".join(s for s in steps if "↳" in s and ("live" in s or "missed" in s or "след" in s or "path" in s or "privacy" in s or "food" in s or "watch" in s or "alt " in s or "health" in s or "hs" in s or "upd" in s or "cloud" in s)))
+        errs = [e for e in errs if "FIT тестова грешка" not in e]
         print("грешки на страницата:", errs or "няма")
         print("console errors:", [l for l in logs if "ERR_FAILED" not in l and "net::" not in l][:10] or "няма")
         print("хоризонтален скрол:", ov)

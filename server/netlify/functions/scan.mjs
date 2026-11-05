@@ -1,22 +1,23 @@
 // FIT — сървър за AI разпознаване на фитнес уреди.
 // Ключът за Claude API е в променливата ANTHROPIC_API_KEY в Netlify (никога в приложението).
+import { CORS, json, originOk, device, ip, take, LIMITS } from "../lib/guard.mjs";
 const MODEL = process.env.FIT_MODEL || "claude-sonnet-5-5";
 const MAX_IMAGE = 1_500_000;   // ~1,1 MB JPEG в base64
 const MAX_PROMPT = 4000;
-const CORS = {
-  "access-control-allow-origin": "*",
-  "access-control-allow-methods": "POST, OPTIONS",
-  "access-control-allow-headers": "content-type",
-};
-const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { ...CORS, "content-type": "application/json" } });
 
-export default async (req) => {
+export default async (req, context) => {
   if (req.method === "OPTIONS") return new Response("", { status: 204, headers: CORS });
   if (req.method !== "POST") return json(405, { error: "POST only" });
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return json(500, { error: "ANTHROPIC_API_KEY липсва в Netlify" });
+  if (!originOk(req)) return json(403, { error: "origin" });
+  if (+(req.headers.get("content-length") || 0) > 2_000_000) return json(413, { error: "too big" });
   let body;
   try { body = await req.json(); } catch { return json(400, { error: "bad json" }); }
+  // Дневен лимит по устройство и IP — сървърът не е безплатен общ достъп до Claude.
+  const kind = Array.isArray(body?.chat) ? "chat" : "scan";
+  const lim = await take(kind, device(req), ip(req, context));
+  if (!lim.ok) return json(429, { error: "limit", limit: LIMITS[kind] });
   // Чат режим: { chat: [{role, content}, ...] } — първото съобщение е контекстът от приложението
   if (Array.isArray(body?.chat)) {
     const turns = body.chat.slice(-12).filter((t) => t && (t.role === "user" || t.role === "assistant") && typeof t.content === "string");

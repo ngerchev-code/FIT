@@ -19,6 +19,7 @@ jobs:
       FIT_STORE_PASSWORD: ${{ secrets.FIT_STORE_PASSWORD }}
       FIT_KEY_PASSWORD: ${{ secrets.FIT_KEY_PASSWORD }}
       FIT_KEY_ALIAS: ${{ secrets.FIT_KEY_ALIAS }}
+      FIT_KEYSTORE_B64: ${{ secrets.FIT_KEYSTORE_B64 }}
     steps:
       - uses: actions/checkout@v5
 
@@ -32,6 +33,19 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: gradle
+
+      - name: Ключ за подписване от GitHub Secrets
+        run: |
+          if [ -n "$FIT_KEYSTORE_B64" ]; then
+            echo "$FIT_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/fit-upload.jks"
+            echo "FIT_KEYSTORE_FILE=$RUNNER_TEMP/fit-upload.jks" >> "$GITHUB_ENV"
+            echo "Подписване с ключа от Secrets."
+          else
+            echo "::warning::FIT_KEYSTORE_B64 не е зададен — подписвам със стария публичен ключ. Задай Secrets преди Google Play (docs/PLAY_RELEASE.md)."
+          fi
+
+      - name: Проверка на кода и тестове
+        run: node tools/check.mjs
 
       - name: Зависимости и синхронизация
         run: |
@@ -62,6 +76,7 @@ jobs:
           cp app/build/outputs/apk/release/app-release.apk ../FIT-1.0.${VERSION_CODE}.apk
           cp app/build/outputs/bundle/release/app-release.aab ../FIT-1.0.${VERSION_CODE}.aab
           cp app/build/outputs/apk/release/app-release.apk ../FIT.apk
+          rm -f "$RUNNER_TEMP/fit-upload.jks"
           cp wear/build/outputs/apk/release/wear-release.apk ../FIT-watch.apk
 
       - name: Издание (Release) с APK за сваляне от телефона

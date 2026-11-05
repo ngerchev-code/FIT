@@ -37,7 +37,17 @@ store/          икона 512×512 за Google Play
 
 ## Подписване
 
-Ключът е в `android/keystore/fit-release.jks` (парола по подразбиране `fit-release-2026`). Преди публикуване в Google Play смени паролите през GitHub Secrets `FIT_STORE_PASSWORD`, `FIT_KEY_PASSWORD`, `FIT_KEY_ALIAS`.
+Новият ключ (upload key) е само в GitHub Secrets: `FIT_KEYSTORE_B64`, `FIT_STORE_PASSWORD`, `FIT_KEY_PASSWORD`, `FIT_KEY_ALIAS`. Старият `android/keystore/fit-release.jks` е публичен и се ползва само докато Secrets не са зададени. Стъпките са в `docs/PLAY_RELEASE.md`.
+
+## Поверителност, архив и отчети
+
+- Политика: `www/privacy.html` (https://ngerchev-code.github.io/FIT/privacy.html).
+- Облачен архив без акаунт: криптиран на телефона с код за възстановяване (`www/fit-cloud.js`, `server/netlify/functions/backup.mjs`).
+- Отчети за грешки само със съгласие (`server/netlify/functions/report.mjs`).
+
+## Проверка на кода
+
+`node tools/check.mjs` проверява синтаксиса, правилата и всички тестове. Пуска се при всяка промяна и преди всяко компилиране.
 
 ## Връзка с MAMA
 
@@ -50,5 +60,5 @@ store/          икона 512×512 за Google Play
 
 1. netlify.com → **Add new site → Import an existing project → GitHub → ngerchev-code/FIT**.
 2. **Base directory:** `server` → Deploy.
-3. **Site configuration → Environment variables → Add:** `ANTHROPIC_API_KEY` = ключът от console.anthropic.com → **Deploy again**.
-4. Във FIT: меню → **AI разпознаване** → адрес `https://<името-на-сайта>.netlify.app/api/scan`.
+3. **Site configuration → Environment variables → Add:** `ANTHROPIC_API_KEY` = ключът от console.anthropic.com, по желание `FIT_ADMIN_KEY` (за отчетите) → **Deploy again**. Дневните лимити и Netlify Blobs работят без допълнителна настройка (виж `docs/PLAY_RELEASE.md`).
+4. Във FIT: меню → **AI разпознаване** → адрес `https://<името-на-сайта>.netlify.app/api/scan`. Същият сървър дава и облачния архив и отчетите.

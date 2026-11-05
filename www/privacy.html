@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FIT — Политика за поверителност</title>
+<style>
+:root{--ink:#10141B;--muted:#5A6472;--accent:#1F4FD8;--hot:#FF7756;--bg:#fff;--card:#F3F5F9}
+@media (prefers-color-scheme:dark){:root{--ink:#E8ECF2;--muted:#9AA4B2;--accent:#7FA2FF;--bg:#10141B;--card:#1A2029}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:28px;line-height:1.2;margin:0 0 4px}
+h2{font-size:19px;margin:28px 0 8px}
+p,li{margin:0 0 8px}
+ul{padding-left:20px;margin:0 0 8px}
+.muted{color:var(--muted);font-size:14px}
+.box{background:var(--card);border-radius:14px;padding:14px 16px;margin:16px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;vertical-align:top;padding:8px 6px;border-bottom:1px solid color-mix(in srgb,var(--muted) 30%,transparent)}
+a{color:var(--accent)}
+.brand{display:inline-block;font-weight:900;color:var(--accent);letter-spacing:.02em}
+.brand b{color:var(--hot)}
+</style>
+</head>
+<body>
+<main>
+<p class="brand">FIT<b>●</b></p>
+<h1>Политика за поверителност</h1>
+<p class="muted">FIT — Fitness Intelligent Team · В сила от 5 ноември 2026 г. · Версия 1</p>
+
+<div class="box"><b>Накратко.</b> Данните ти стоят на твоя телефон. FIT няма акаунти, реклами и проследяване и не продава данни. Нещо излиза от телефона само когато ползваш функция, която изисква това, и само след твоето съгласие. Можеш да изтеглиш или изтриеш всичко по всяко време.</div>
+
+<h2>1. Кой отговаря за данните</h2>
+<p>FIT се разработва от Николай Герчев, България. Връзка: <a href="https://github.com/ngerchev-code/FIT/issues">github.com/ngerchev-code/FIT/issues</a>.</p>
+
+<h2>2. Какво пази FIT и къде</h2>
+<p>Всичко по-долу се пази <b>само в паметта на приложението на твоето устройство</b>. Не се изпраща на наш сървър.</p>
+<ul>
+<li>Профил: име, възраст, ръст, тегло, цели, ниво, ограничения, алергии и оборудване.</li>
+<li>Тренировки: план, серии, килограми, повторения, почивки, пропуснати тренировки и причини.</li>
+<li>Самооценка: умора, сън, болка. Ако използваш часовник, и пулс, само с разрешение на часовника.</li>
+<li>Здравно досие: изследвания и стойности, които въвеждаш сам. То е изключено, ако не дадеш съгласие за здравни данни.</li>
+<li>Мои обекти, история на сканираните храни и настройки.</li>
+</ul>
+
+<h2>3. Кога данни напускат телефона</h2>
+<table>
+<tr><th>Функция</th><th>Какво се изпраща</th><th>На кого</th></tr>
+<tr><td>Местоположение (време, карта, обекти наблизо)</td><td>Приблизителни координати, без име и профил</td><td>Open-Meteo (време), OpenStreetMap / Overpass (обекти), доставчици на картни плочки</td></tr>
+<tr><td>AI разпознаване на уред или етикет, чат с FIT Coach</td><td>Снимката или въпроса и кратък контекст: възраст, пол, тегло, цели, ниво, ограничения, алергии и града за прогнозата. Не се изпращат име, местоположение по GPS, контакти или здравното досие</td><td>FIT сървъра (Netlify), който ги предава на Anthropic (Claude) за обработка</td></tr>
+<tr><td>Скенер на храни</td><td>Баркод на продукта</td><td>Open Food Facts</td></tr>
+<tr><td>Облачен архив (по избор)</td><td>Криптиран блок. Ключът е твоят код за възстановяване, който не напуска телефона</td><td>FIT сървъра (Netlify Blobs). Сървърът не може да прочете съдържанието</td></tr>
+<tr><td>Отчети за грешки (по избор, изключено по подразбиране)</td><td>Технически данни за срива: съобщение, ред в кода, версия, модел на браузъра, случаен номер на устройството</td><td>FIT сървъра (Netlify)</td></tr>
+<tr><td>Проверка за нова версия</td><td>Обикновена заявка без лични данни</td><td>GitHub</td></tr>
+</table>
+<p>Всяка от функциите с лични данни има отделно съгласие при първото пускане. Можеш да го промениш в <b>Меню → Поверителност и данни</b>.</p>
+
+<h2>4. Основание</h2>
+<p>Обработваме данни на основание твоето съгласие (чл. 6, ал. 1, б. „а“ и чл. 9, ал. 2, б. „а“ от GDPR за здравни данни). Можеш да го оттеглиш по всяко време, без това да засяга вече извършената обработка.</p>
+
+<h2>5. Колко дълго</h2>
+<ul>
+<li>На телефона: докато не ги изтриеш или не премахнеш приложението.</li>
+<li>Облачен архив: докато е включен. При „Изключи“ архивът се изтрива от сървъра. Неизползван архив се изтрива след 12 месеца.</li>
+<li>Отчети за грешки: до 90 дни.</li>
+<li>AI заявки: FIT сървърът не пази снимките и текста. Брои само колко заявки са направени от устройството за деня, за да спре злоупотреби. Anthropic обработва заявките по своята политика, като доставчик на услугата.</li>
+</ul>
+
+<h2>6. Твоите права</h2>
+<p>Имаш право на достъп, коригиране, изтриване, преносимост и възражение. В приложението:</p>
+<ul>
+<li><b>Изтегли всичките ми данни</b> — JSON файл с всичко, което FIT пази.</li>
+<li><b>Изтрий всичко</b> — премахва данните от устройството.</li>
+<li><b>Архив → Изключи</b> — изтрива облачния архив.</li>
+</ul>
+<p>Можеш да подадеш жалба до Комисията за защита на личните данни (<a href="https://www.cpdp.bg">cpdp.bg</a>).</p>
+
+<h2>7. Сигурност</h2>
+<p>Облачният архив се криптира на телефона с AES-256-GCM. Ключът се извлича от кода ти за възстановяване. Връзките са само по HTTPS. Не съхраняваме пароли. Ако загубиш кода, архивът не може да се отвори от никого, включително от нас.</p>
+
+<h2>8. Здраве</h2>
+<p>FIT не поставя диагнози и не замества лекар или треньор. Пулсът и калориите са ориентировъчни.</p>
+
+<h2>9. Деца</h2>
+<p>FIT не е предназначен за деца под 14 години и не събира съзнателно данни за тях.</p>
+
+<h2>10. Промени</h2>
+<p>При промяна ще обновим датата горе и ще покажем новината в <b>Меню → Новости и версии</b>.</p>
+
+<h2 lang="en">Summary in English</h2>
+<p lang="en">FIT stores all personal and health data locally on the device. There are no accounts, ads or tracking, and no data is sold. Data leaves the device only for features the user enables with explicit consent: coarse location for weather and maps (Open-Meteo, OpenStreetMap), photos and questions for AI recognition (processed by Anthropic via the FIT server), barcodes (Open Food Facts), an optional end-to-end encrypted backup, and optional crash reports (off by default). Users can export or delete all data in the app at any time.</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,24 @@
+name: Проверка на кода
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Зависимости на сървъра
+        run: npm --prefix server install --no-audit --no-fund
+      - name: Синтаксис, правила и тестове (приложение + сървър)
+        run: node tools/check.mjs

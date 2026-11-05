@@ -332,6 +332,7 @@ input.in,select.in,textarea.in{border:1px solid var(--line);background:var(--sur
 
 <script src="fit-core.js"></script>
 <script src="food-core.js"></script>
+<script src="fit-cloud.js"></script>
 <script>
 const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const IOS = !!(window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform()==="ios");
@@ -1198,7 +1199,7 @@ async function aiScan(file, prompt, signal){
   if(SAMPLE && SAMPLE_IMG) return SAMPLE.json(prompt,{images:[file],signal});
   const a=aiCfg(); const data=await shrinkImage(file);
   if(a.url){
-    const r=await fetch(a.url,{method:"POST",signal,headers:{"content-type":"application/json"},body:JSON.stringify({image:data,prompt})});
+    const r=await fetch(a.url,{method:"POST",signal,headers:{"content-type":"application/json","x-fit-device":window.FCL?FCL.device():""},body:JSON.stringify({image:data,prompt})});
     if(!r.ok) throw {code:r.status===429?"rate_limited":"upstream_error"};
     const j=await r.json(); return parseJSONLoose(j.text||"");
   }
@@ -1215,9 +1216,9 @@ function aiSheet(){
   const a=aiCfg();
   sheet(`<div class="grab"></div><p class="eyebrow">Настройки</p><div class="h2">AI разпознаване на уреди</div>
     <p class="muted" style="margin:0">FIT изпраща снимката на Claude и получава уреда и до 10 упражнения за твоя профил. Избери един от двата начина.</p>
-    <label class="f">Адрес на FIT сървъра (за всички потребители)<input class="in" id="ai-url" value="${esc(a.url||"")}" placeholder="https://….netlify.app/api/scan" inputmode="url"></label>
-    <label class="f">Или личен ключ за Claude API (само на този телефон)<input class="in" id="ai-key" value="${esc(a.key||"")}" placeholder="sk-ant-…" autocomplete="off"></label>
-    <p class="note" style="margin:0">Ключът остава само на този телефон и не се изпраща никъде освен към Claude. Не го давай на други хора.</p>
+    <label class="f">Адрес на FIT сървъра — препоръчително (ключът е на сървъра, с дневни лимити)<input class="in" id="ai-url" value="${esc(a.url||"")}" placeholder="https://….netlify.app/api/scan" inputmode="url"></label>
+    <label class="f">Или личен ключ за Claude API — само за тест, на този телефон<input class="in" id="ai-key" value="${esc(a.key||"")}" placeholder="sk-ant-…" autocomplete="off"></label>
+    <p class="note" style="margin:0">Личният ключ стои в паметта на приложението и не влиза в архива и експорта. За всички потребители ползвай FIT сървъра. Сървърът дава и облачния архив и отчетите за грешки.</p>
     <div class="row"><button class="btn" id="ai-ok" type="button" style="flex:1">Запази</button><button class="btn ghost" id="ai-clear" type="button">Изчисти</button></div>`,()=>{
     $("#ai-ok").onclick=()=>{ S.ai={url:$("#ai-url").value.trim(),key:$("#ai-key").value.trim()}; save(); closeSheet(); render(); toast("AI разпознаване", aiReady()?"Готово — снимай уред в Скенера.":"Не е зададен сървър или ключ."); };
     $("#ai-clear").onclick=()=>{ S.ai={}; save(); closeSheet(); render(); };
@@ -1836,7 +1837,7 @@ function localAnswer(q){
 function appContext(){
   const p=P(); const c=WX?WX.w.current:null;
   return `Ти си FIT — дружелюбен асистент в приложението FIT (Fitness Intelligent Team) за начинаещи във фитнеса в България. Отговаряй на български, кратко (до 6 изречения), конкретно и безопасно. Не поставяш диагнози; при болка, заболяване или лекарства съветваш лекар. Никога не даваш дози за забранени или опасни вещества.
-Потребител: ${p.name}, ${p.age} г., ${p.sex==="f"?"жена":"мъж"}, ${p.weight} кг, цели: ${goalName(p)}, ниво ${p.level}, ограничения: ${p.limits.map(x=>LIMITS[x]).join(", ")||"няма"}, алергии: ${(p.allergies||[]).map(a=>ALLERGENS[a]).join(", ")||"няма"}.
+Потребител (без име — минимум данни към AI): ${p.age} г., ${p.sex==="f"?"жена":"мъж"}, ${p.weight} кг, цели: ${goalName(p)}, ниво ${p.level}, ограничения: ${p.limits.map(x=>LIMITS[x]).join(", ")||"няма"}, алергии: ${(p.allergies||[]).map(a=>ALLERGENS[a]).join(", ")||"няма"}.
 Днес: ${workoutSummary()}
 ${c?`Време в ${WX.city}: ${Math.round(c.temperature_2m)}°, ${WMO[c.weather_code]||""}.`:""}
 Раздели в приложението, към които можеш да насочиш с маркер в края на отговора: [[today]] Днес, [[plan]] Програма, [[scan]] Скенер, [[mama]] Храна и MAMA, [[w:nature]] Навън около мен, [[w:pilates]] Пилатес и часове, [[w:food]] Заведения с Rezzo, [[w:gyms]] Фитнеси, [[w:subst]] Добавки, [[w:shops]] Магазини, [[w:weather]] Време, [[w:events]] Събития, [[w:places]] Мои обекти. Сложи най-много 2 маркера.`;
@@ -1844,7 +1845,7 @@ ${c?`Време в ${WX.city}: ${Math.round(c.temperature_2m)}°, ${WMO[c.weathe
 async function aiText(turns){
   if(SAMPLE){ const r=await SAMPLE(turns,{cache:false,modelTier:"quick"}); return r.text; }
   const a=aiCfg();
-  if(a.url){ const r=await fetch(a.url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat:turns})}); if(!r.ok) throw {code:"upstream_error"}; return (await r.json()).text||""; }
+  if(a.url){ const r=await fetch(a.url,{method:"POST",headers:{"content-type":"application/json","x-fit-device":window.FCL?FCL.device():""},body:JSON.stringify({chat:turns})}); if(!r.ok) throw {code:r.status===429?"rate_limited":"upstream_error"}; return (await r.json()).text||""; }
   if(a.key){ const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":a.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:AI_MODEL,max_tokens:700,system:turns[0].content,messages:turns.slice(1)})}); if(r.status===401) throw {code:"bad_key"}; if(!r.ok) throw {code:"upstream_error"}; const j=await r.json(); return (j.content||[]).map(c=>c.text||"").join(""); }
   throw {code:"not_configured"};
 }
@@ -3102,6 +3103,7 @@ if(NATIVE){
     if(P()) render();
   }catch(e){}
 })();
+try{ if(window.FCL) FCL.install(); }catch(e){ console.error(e); }
 </script>
 
 </body>

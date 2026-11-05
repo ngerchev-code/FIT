@@ -1,0 +1,9 @@
+{
+  "name": "fit-server",
+  "private": true,
+  "type": "module",
+  "description": "FIT — сървър: AI разпознаване, облачен архив, отчети за грешки (Netlify Functions)",
+  "dependencies": {
+    "@netlify/blobs": "^11.1.0"
+  }
+}
