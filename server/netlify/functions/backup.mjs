@@ -6,7 +6,7 @@ const MAX = 4_600_000;
 const ID = /^[0-9a-f]{64}$/;
 
 export default async (req, context) => {
-  if (req.method === "OPTIONS") return new Response("", { status: 204, headers: CORS });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
   if (!originOk(req)) return json(403, { error: "origin" });
   const store = blobs("fit-backups");
   const url = new URL(req.url);

@@ -25,6 +25,9 @@ const rq = (url, method, body, h = {}) => new Request("https://fit.example" + ur
 const ctx = { ip: "1.2.3.4" };
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log("ok  ", name); };
 
+await t("CORS проверка (OPTIONS) не срива сървъра — 204 без тяло (беше 502 и спираше разпознаването)", async () => {
+  for (const fn of [scan, backup, report]) { const r = await fn(rq("/api/scan", "OPTIONS"), ctx); assert.equal(r.status, 204); assert.equal(r.headers.get("access-control-allow-origin"), "*"); }
+});
 await t("AI: дневен лимит по устройство → 429 след лимита", async () => {
   for (let i = 0; i < 3; i++) assert.equal((await scan(rq("/api/scan", "POST", { image: "AAAA", prompt: "уред" }), ctx)).status, 200);
   const r = await scan(rq("/api/scan", "POST", { image: "AAAA", prompt: "уред" }), ctx);

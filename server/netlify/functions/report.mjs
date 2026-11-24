@@ -4,7 +4,7 @@ import { blobs, CORS, json, originOk, device, ip, take } from "../lib/guard.mjs"
 const cut = (s, n) => String(s || "").slice(0, n);
 
 export default async (req, context) => {
-  if (req.method === "OPTIONS") return new Response("", { status: 204, headers: CORS });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
   const store = blobs("fit-reports");
   // Преглед за разработчика: GET /api/report?key=<FIT_ADMIN_KEY>[&day=YYYY-MM-DD]
   if (req.method === "GET") {

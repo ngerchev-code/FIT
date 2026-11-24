@@ -3,10 +3,10 @@
 import { CORS, json, originOk, device, ip, take, LIMITS } from "../lib/guard.mjs";
 const MODEL = process.env.FIT_MODEL || "claude-sonnet-5-5";
 const MAX_IMAGE = 1_500_000;   // ~1,1 MB JPEG в base64
-const MAX_PROMPT = 4000;
+const MAX_PROMPT = 8000;
 
 export default async (req, context) => {
-  if (req.method === "OPTIONS") return new Response("", { status: 204, headers: CORS });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
   if (req.method !== "POST") return json(405, { error: "POST only" });
   // името на променливата се приема без значение от малки и главни букви (напр. Anthropic_api_key)
   const key = process.env.ANTHROPIC_API_KEY || Object.entries(process.env).find(([k]) => k.toUpperCase() === "ANTHROPIC_API_KEY")?.[1];
@@ -40,7 +40,7 @@ export default async (req, context) => {
   if (typeof image !== "string" || !image || image.length > MAX_IMAGE) return json(400, { error: "bad image" });
   if (typeof prompt !== "string" || !prompt || prompt.length > MAX_PROMPT) return json(400, { error: "bad prompt" });
   // Сървърът приема само заявки за фитнес уреди — не е общ достъп до Claude.
-  const guard = "Ти си фитнес треньор в приложението FIT. Отговаряй само за фитнес уреди и упражнения. Ако заявката е за друго, върни {\"equipment\":\"\"}.\n\n";
+  const guard = "Ти си фитнес треньор в приложението FIT. Отговаряй само за фитнес уреди, упражнения и етикети на храни (състав, алергени). Ако снимката или заявката е за друго, върни {\"equipment\":\"\"}.\n\n";
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },

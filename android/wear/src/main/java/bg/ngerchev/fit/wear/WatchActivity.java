@@ -99,6 +99,9 @@ public class WatchActivity extends Activity implements SensorEventListener {
         scroll.addView(box, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
         setContentView(scroll);
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) { phoneWarning(); return; }
+        // известието „тренировката започна“ отваря FIT сам — нужно е разрешение (Wear OS 4+)
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 9);
         render();
     }
 

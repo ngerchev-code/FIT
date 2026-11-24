@@ -333,6 +333,8 @@ input.in,select.in,textarea.in{border:1px solid var(--line);background:var(--sur
 <script src="fit-core.js"></script>
 <script src="food-core.js"></script>
 <script src="fit-cloud.js"></script>
+<script src="fit-voice.js"></script>
+<script src="fit-livebar.js"></script>
 <script>
 const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const IOS = !!(window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform()==="ios");
@@ -3104,6 +3106,8 @@ if(NATIVE){
   }catch(e){}
 })();
 try{ if(window.FCL) FCL.install(); }catch(e){ console.error(e); }
+try{ if(window.FITVoice) FITVoice.install(); }catch(e){ console.error(e); }
+try{ if(window.FITLiveBar) FITLiveBar.install(); }catch(e){ console.error(e); }
 </script>
 
 </body>

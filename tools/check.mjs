@@ -29,7 +29,7 @@ const jks = execFileSync("git", ["ls-files", "*.jks", "*.keystore", "*.p12"], { 
 jks.length ? fail("нов ключ за подписване е добавен в хранилището: " + jks.join(", ") + " — пази го само в GitHub Secrets") : ok("нови ключове за подписване не са в хранилището");
 
 // 3. Тестове
-const tests = ["tools/test_core.mjs", "tools/test_food.mjs", "tools/test_cloud.mjs"];
+const tests = ["tools/test_core.mjs", "tools/test_food.mjs", "tools/test_cloud.mjs", "tools/test_voice.mjs"];
 if (existsSync("server/node_modules/@netlify/blobs")) tests.push("tools/test_server.mjs"); else console.log("· tools/test_server.mjs пропуснат (npm --prefix server install)");
 for (const t of tests) {
   try { const out = execFileSync(process.execPath, [t], { encoding: "utf8" }); ok(t + " — " + (out.trim().split("\n").pop() || "")); }
